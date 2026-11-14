@@ -1,7 +1,12 @@
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const NexoraApp());
 }
 
@@ -18,7 +23,36 @@ class NexoraApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'NEXORA',
       theme: ThemeData.dark(),
-      home: const WelcomeScreen(),
+      home: const AuthGate(),
+    );
+  }
+}
+
+// PROTECCIÓN DE ACCESO
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: fondo,
+            body: Center(
+              child: CircularProgressIndicator(color: azul),
+            ),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data != null) {
+          return const MainScreen();
+        }
+
+        return const WelcomeScreen();
+      },
     );
   }
 }
@@ -458,20 +492,130 @@ class CategoryIcon extends StatelessWidget {
   }
 }
 
-// ACCESO
+// ACCESO REAL CON FIREBASE
 
-class AccessScreen extends StatelessWidget {
+class AccessScreen extends StatefulWidget {
   final String tipo;
 
   const AccessScreen({super.key, required this.tipo});
 
-  void continuar(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
+  @override
+  State<AccessScreen> createState() => _AccessScreenState();
+}
+
+class _AccessScreenState extends State<AccessScreen> {
+  final formKey = GlobalKey<FormState>();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  bool cargando = false;
+  bool ocultarPassword = true;
+
+  bool get esRegistro => widget.tipo == 'Crear cuenta';
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  String mensajeError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'El correo electrónico no es válido.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Correo o contraseña incorrectos.';
+      case 'email-already-in-use':
+        return 'Este correo ya tiene una cuenta.';
+      case 'weak-password':
+        return 'La contraseña debe tener al menos 6 caracteres.';
+      case 'network-request-failed':
+        return 'Revisa tu conexión a internet.';
+      case 'too-many-requests':
+        return 'Demasiados intentos. Inténtalo más tarde.';
+      default:
+        return 'No se pudo completar la operación. Inténtalo nuevamente.';
+    }
+  }
+
+  Future<void> continuar() async {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() => cargando = true);
+
+    try {
+      if (esRegistro) {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text,
+        );
+      } else {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mensajeError(e))),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ocurrió un error. Inténtalo nuevamente.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => cargando = false);
+    }
+  }
+
+  Future<void> recuperarPassword() async {
+    final email = emailController.text.trim();
+
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Escribe tu correo para recuperar la contraseña.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Te enviamos un enlace para recuperar tu contraseña.'),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mensajeError(e))),
+        );
+      }
+    }
+  }
+
+  void cambiarTipo() {
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => const MainScreen(),
+        builder: (_) => AccessScreen(
+          tipo: esRegistro ? 'Iniciar sesión' : 'Crear cuenta',
+        ),
       ),
-      (route) => false,
     );
   }
 
@@ -485,80 +629,135 @@ class AccessScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(25),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 45),
-            const Icon(
-              Icons.lock_outline,
-              color: azul,
-              size: 55,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              tipo,
-              style: const TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 30),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Correo electrónico',
-                prefixIcon: const Icon(Icons.email_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+        child: Form(
+          key: formKey,
+          child: Column(
+            children: [
+              const SizedBox(height: 35),
+              const Icon(Icons.lock_outline, color: azul, size: 55),
+              const SizedBox(height: 20),
+              Text(
+                widget.tipo,
+                style: const TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Contraseña',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 25),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () => continuar(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: azul,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+              const SizedBox(height: 30),
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  labelText: 'Correo electrónico',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'CONTINUAR',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Escribe tu correo electrónico.';
+                  }
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
+                      .hasMatch(value.trim())) {
+                    return 'Escribe un correo válido.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 18),
+              TextFormField(
+                controller: passwordController,
+                obscureText: ocultarPassword,
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() => ocultarPassword = !ocultarPassword);
+                    },
+                    icon: Icon(
+                      ocultarPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Escribe tu contraseña.';
+                  }
+                  if (esRegistro && value.length < 6) {
+                    return 'Usa al menos 6 caracteres.';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'El acceso real y seguro de cuentas lo configuraremos más adelante.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white60),
-            ),
-          ],
+              if (!esRegistro)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: recuperarPassword,
+                    child: const Text(
+                      '¿Olvidaste tu contraseña?',
+                      style: TextStyle(color: azul),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: cargando ? null : continuar,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azul,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  child: cargando
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          esRegistro ? 'CREAR CUENTA' : 'INICIAR SESIÓN',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextButton(
+                onPressed: cambiarTipo,
+                child: Text(
+                  esRegistro
+                      ? '¿Ya tienes cuenta? Inicia sesión'
+                      : '¿No tienes cuenta? Regístrate',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: azul),
+                ),
+              ),
+              const SizedBox(height: 15),
+              const Text(
+                'Tu cuenta estará protegida mediante Firebase.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// MENÚ PRINCIPAL Y CATEGORÍAS ACTUALES
+// MENÚ PRINCIPAL Y CATEGORÍAS
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -647,20 +846,14 @@ class HomePage extends StatelessWidget {
               const Spacer(),
               IconButton(
                 onPressed: () {},
-                icon: const Icon(
-                  Icons.notifications_none,
-                  color: azul,
-                ),
+                icon: const Icon(Icons.notifications_none, color: azul),
               ),
             ],
           ),
           const SizedBox(height: 28),
           const Text(
             'TU MUNDO.',
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
           ),
           const Text(
             'TU ENTRETENIMIENTO.',
@@ -717,9 +910,7 @@ class HomePage extends StatelessWidget {
                         Color(0xFF251B45),
                       ],
                     ),
-                    border: Border.all(
-                      color: azul.withOpacity(0.25),
-                    ),
+                    border: Border.all(color: azul.withOpacity(0.25)),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -728,9 +919,7 @@ class HomePage extends StatelessWidget {
                       const SizedBox(height: 10),
                       Text(
                         item.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -773,12 +962,52 @@ class LibraryPage extends StatelessWidget {
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
+  Future<void> cerrarSesion(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const SimplePage(
-      icon: Icons.account_circle,
-      title: 'Mi perfil',
-      message: 'Aquí estarán tu cuenta y tus preferencias.',
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.account_circle,
+                color: azul,
+                size: 65,
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Mi perfil',
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                FirebaseAuth.instance.currentUser?.email ?? '',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: () => cerrarSesion(context),
+                icon: const Icon(Icons.logout),
+                label: const Text('CERRAR SESIÓN'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: morado,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
