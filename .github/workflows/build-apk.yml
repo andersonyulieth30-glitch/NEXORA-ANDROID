@@ -32,7 +32,14 @@ jobs:
         run: flutter create . --platforms=android --project-name nexora
 
       - name: Configurar Android 23
-        run: sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' android/app/build.gradle
+        run: |
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' android/app/build.gradle
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle
+          sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 23/' android/app/build.gradle
+
+      - name: Verificar minSdk
+        run: |
+          grep -n "minSdk" android/app/build.gradle
 
       - name: Instalar dependencias
         run: flutter pub get
