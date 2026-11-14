@@ -1,4 +1,3 @@
-
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -13,6 +12,7 @@ Future<void> main() async {
 const Color azul = Color(0xFF20C8FF);
 const Color morado = Color(0xFF9857FF);
 const Color fondo = Color(0xFF050817);
+const Color panel = Color(0xFF111A30);
 
 class NexoraApp extends StatelessWidget {
   const NexoraApp({super.key});
@@ -22,7 +22,13 @@ class NexoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'NEXORA',
-      theme: ThemeData.dark(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: fondo,
+        colorScheme: const ColorScheme.dark(
+          primary: azul,
+          secondary: morado,
+        ),
+      ),
       home: const AuthGate(),
     );
   }
@@ -57,7 +63,7 @@ class AuthGate extends StatelessWidget {
   }
 }
 
-// PORTADA ORIGINAL
+// PORTADA
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -263,7 +269,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 }
 
-// ROBOT ORIGINAL
+// ROBOT
 
 class NexoraRobot extends StatelessWidget {
   const NexoraRobot({super.key});
@@ -408,6 +414,8 @@ class RobotEye extends StatelessWidget {
   }
 }
 
+// BOTONES Y CATEGORÍAS DE LA PORTADA
+
 class NeonButton extends StatelessWidget {
   final String text;
   final IconData icon;
@@ -492,7 +500,7 @@ class CategoryIcon extends StatelessWidget {
   }
 }
 
-// ACCESO REAL CON FIREBASE
+// ACCESO CON FIREBASE
 
 class AccessScreen extends StatefulWidget {
   final String tipo;
@@ -559,7 +567,6 @@ class _AccessScreenState extends State<AccessScreen> {
         );
       }
 
-      // CIERRA LA PANTALLA DE ACCESO AL AUTENTICARSE
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -600,7 +607,9 @@ class _AccessScreenState extends State<AccessScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Te enviamos un enlace para recuperar tu contraseña.'),
+            content: Text(
+              'Te enviamos un enlace para recuperar tu contraseña.',
+            ),
           ),
         );
       }
@@ -762,7 +771,7 @@ class _AccessScreenState extends State<AccessScreen> {
   }
 }
 
-// MENÚ PRINCIPAL Y CATEGORÍAS
+// MENÚ PRINCIPAL
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -784,7 +793,11 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: pages[selected],
+      backgroundColor: fondo,
+      body: IndexedStack(
+        index: selected,
+        children: pages,
+      ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFF11182B),
         indicatorColor: azul.withOpacity(0.18),
@@ -800,14 +813,17 @@ class _MainScreenState extends State<MainScreen> {
           ),
           NavigationDestination(
             icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore, color: azul),
             label: 'Explorar',
           ),
           NavigationDestination(
             icon: Icon(Icons.bookmark_border),
+            selectedIcon: Icon(Icons.bookmark, color: azul),
             label: 'Biblioteca',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person, color: azul),
             label: 'Perfil',
           ),
         ],
@@ -816,10 +832,12 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
+// NUEVA PANTALLA DE INICIO
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  final categories = const [
+  static const List<CategoryData> categories = [
     CategoryData('Películas', Icons.movie_rounded),
     CategoryData('Series', Icons.live_tv_rounded),
     CategoryData('TV en vivo', Icons.tv_rounded),
@@ -830,35 +848,100 @@ class HomePage extends StatelessWidget {
     CategoryData('Educación', Icons.school_rounded),
   ];
 
+  static const List<MediaData> movies = [
+    MediaData(
+      'Universo desconocido',
+      'Ciencia ficción',
+      'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=700',
+    ),
+    MediaData(
+      'Mundo salvaje',
+      'Aventura',
+      'https://images.unsplash.com/photo-1511497584788-876760111969?w=700',
+    ),
+    MediaData(
+      'La gran aventura',
+      'Acción',
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=700',
+    ),
+    MediaData(
+      'Más allá del espacio',
+      'Fantasía',
+      'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=700',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(18, 15, 18, 25),
         children: [
+          // ENCABEZADO
           Row(
             children: [
-              const Icon(Icons.hexagon, color: azul, size: 34),
-              const SizedBox(width: 10),
+              Container(
+                width: 43,
+                height: 43,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(
+                    colors: [azul, morado],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: azul.withOpacity(0.25),
+                      blurRadius: 15,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.change_history_rounded,
+                  color: Colors.white,
+                  size: 29,
+                ),
+              ),
+              const SizedBox(width: 11),
               const Text(
                 'NEXORA',
                 style: TextStyle(
                   fontSize: 25,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                   letterSpacing: 3,
+                  shadows: [
+                    Shadow(color: azul, blurRadius: 12),
+                  ],
                 ),
               ),
               const Spacer(),
               IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.notifications_none, color: azul),
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: azul,
+                  size: 27,
+                ),
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.account_circle_outlined,
+                  color: Colors.white70,
+                  size: 27,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 28),
+
+          const SizedBox(height: 25),
+
           const Text(
             'TU MUNDO.',
-            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
           ),
           const Text(
             'TU ENTRETENIMIENTO.',
@@ -866,23 +949,180 @@ class HomePage extends StatelessWidget {
               fontSize: 19,
               color: azul,
               fontWeight: FontWeight.bold,
+              letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           const Text(
-            'Descubre todo lo que te gusta en un solo lugar.',
-            style: TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 30),
-          const Text(
-            'EXPLORA CATEGORÍAS',
+            'Descubre un universo hecho para ti.',
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
+              color: Color(0xFF9BAAC8),
+              fontSize: 13,
             ),
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 25),
+
+          // BANNER DESTACADO
+          ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              children: [
+                SizedBox(
+                  height: 220,
+                  width: double.infinity,
+                  child: Image.network(
+                    'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFF172D59),
+                              Color(0xFF311B55),
+                              Color(0xFF080D1B),
+                            ],
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.auto_awesome,
+                            color: azul,
+                            size: 65,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  height: 220,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        fondo.withOpacity(0.95),
+                        fondo.withOpacity(0.55),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 18,
+                  right: 15,
+                  bottom: 18,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: azul.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: azul),
+                        ),
+                        child: const Text(
+                          'NEXORA DESTACADOS',
+                          style: TextStyle(
+                            color: azul,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'EXPLORA LO EXTRAORDINARIO',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        'Tu próxima historia comienza aquí.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 37,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CategoryPage(
+                                  title: 'Destacados',
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                          label: const Text(
+                            'DESCUBRIR',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: azul,
+                            foregroundColor: fondo,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // PELÍCULAS Y SERIES
+          const SectionHeader(
+            title: 'PELÍCULAS Y SERIES',
+            subtitle: 'Historias para cada momento',
+          ),
+          const SizedBox(height: 14),
+
+          SizedBox(
+            height: 205,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: movies.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 13),
+              itemBuilder: (context, index) {
+                final movie = movies[index];
+                return MediaCard(media: movie);
+              },
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // CATEGORÍAS
+          const SectionHeader(
+            title: 'EXPLORA TU UNIVERSO',
+            subtitle: 'Todo lo que te gusta en un solo lugar',
+          ),
+          const SizedBox(height: 15),
+
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -890,14 +1130,15 @@ class HomePage extends StatelessWidget {
             gridDelegate:
                 const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 13,
-              mainAxisSpacing: 13,
-              childAspectRatio: 1.35,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.55,
             ),
             itemBuilder: (context, index) {
               final item = categories[index];
+
               return InkWell(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(17),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -908,35 +1149,264 @@ class HomePage extends StatelessWidget {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(17),
                     gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
-                        Color(0xFF172744),
-                        Color(0xFF251B45),
+                        Color(0xFF192C4B),
+                        Color(0xFF211A40),
                       ],
                     ),
-                    border: Border.all(color: azul.withOpacity(0.25)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(item.icon, color: azul, size: 34),
-                      const SizedBox(height: 10),
-                      Text(
-                        item.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                    border: Border.all(
+                      color: azul.withOpacity(0.25),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: morado.withOpacity(0.08),
+                        blurRadius: 12,
                       ),
                     ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          item.icon,
+                          color: azul,
+                          size: 29,
+                        ),
+                        const SizedBox(height: 9),
+                        Text(
+                          item.name.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
             },
+          ),
+
+          const SizedBox(height: 25),
+
+          Container(
+            padding: const EdgeInsets.all(17),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(
+                colors: [
+                  azul.withOpacity(0.15),
+                  morado.withOpacity(0.15),
+                ],
+              ),
+              border: Border.all(
+                color: azul.withOpacity(0.25),
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  color: azul,
+                  size: 30,
+                ),
+                SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'EL UNIVERSO NEXORA',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        'Disfruta, explora y descubre nuevas experiencias.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+// TÍTULOS DE SECCIÓN
+
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const SectionHeader({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            color: Color(0xFF8E9BB7),
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// TARJETAS DE PELÍCULAS
+
+class MediaData {
+  final String title;
+  final String category;
+  final String image;
+
+  const MediaData(this.title, this.category, this.image);
+}
+
+class MediaCard extends StatelessWidget {
+  final MediaData media;
+
+  const MediaCard({super.key, required this.media});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 132,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: azul.withOpacity(0.25),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: azul.withOpacity(0.08),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      media.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF1A3760),
+                                Color(0xFF39205B),
+                              ],
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.movie_creation_outlined,
+                            color: azul,
+                            size: 45,
+                          ),
+                        );
+                      },
+                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        height: 65,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              fondo.withOpacity(0.9),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white,
+                        size: 27,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            media.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            media.category,
+            style: const TextStyle(
+              color: Color(0xFF8E9BB7),
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// EXPLORAR
 
 class ExplorePage extends StatelessWidget {
   const ExplorePage({super.key});
@@ -951,6 +1421,8 @@ class ExplorePage extends StatelessWidget {
   }
 }
 
+// BIBLIOTECA
+
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
 
@@ -963,6 +1435,8 @@ class LibraryPage extends StatelessWidget {
     );
   }
 }
+
+// PERFIL
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -1017,6 +1491,8 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
+// PÁGINAS DE CATEGORÍAS
+
 class CategoryPage extends StatelessWidget {
   final String title;
 
@@ -1025,12 +1501,22 @@ class CategoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      backgroundColor: fondo,
+      appBar: AppBar(
+        backgroundColor: fondo,
+        title: Text(title),
+      ),
       body: Center(
-        child: Text(
-          'Próximamente encontrarás contenido de $title.',
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 18),
+        child: Padding(
+          padding: const EdgeInsets.all(25),
+          child: Text(
+            'Próximamente encontrarás contenido de $title.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 18,
+              color: Colors.white70,
+            ),
+          ),
         ),
       ),
     );
@@ -1080,6 +1566,8 @@ class SimplePage extends StatelessWidget {
     );
   }
 }
+
+// DATOS DE CATEGORÍAS
 
 class CategoryData {
   final String name;
