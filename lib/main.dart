@@ -558,6 +558,11 @@ class _AccessScreenState extends State<AccessScreen> {
           password: passwordController.text,
         );
       }
+
+      // CIERRA LA PANTALLA DE ACCESO AL AUTENTICARSE
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
