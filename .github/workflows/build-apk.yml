@@ -31,15 +31,63 @@ jobs:
       - name: Crear estructura Android
         run: flutter create . --platforms=android --project-name nexora
 
-      - name: Configurar Android 23
+      - name: Configurar Firebase Android
         run: |
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' android/app/build.gradle
-          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle
-          sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 23/' android/app/build.gradle
+          cp google-services.json android/app/google-services.json
 
-      - name: Verificar minSdk
-        run: |
-          grep -n "minSdk" android/app/build.gradle
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          settings = Path("android/settings.gradle")
+          app = Path("android/app/build.gradle")
+
+          def add_plugin(path, plugin_line):
+              content = path.read_text()
+              if plugin_line not in content:
+                  start = content.find("plugins {")
+                  if start == -1:
+                      raise SystemExit(f"No se encontro plugins en {path}")
+                  end = content.find("\n}", start)
+                  if end == -1:
+                      raise SystemExit(f"No se encontro cierre de plugins en {path}")
+                  content = content[:end] + "\n    " + plugin_line + content[end:]
+                  path.write_text(content)
+
+          add_plugin(
+              settings,
+              'id "com.google.gms.google-services" version "4.4.2" apply false'
+          )
+
+          add_plugin(
+              app,
+              'id "com.google.gms.google-services"'
+          )
+
+          content = app.read_text()
+          content = re.sub(
+              r'minSdkVersion\s*=\s*flutter\.minSdkVersion',
+              'minSdkVersion = 23',
+              content
+          )
+          content = re.sub(
+              r'minSdkVersion\s+flutter\.minSdkVersion',
+              'minSdkVersion 23',
+              content
+          )
+          content = re.sub(
+              r'minSdk\s*=\s*flutter\.minSdkVersion',
+              'minSdk = 23',
+              content
+          )
+          app.write_text(content)
+
+          print("Configuracion de Firebase y Android aplicada.")
+          print("Configuracion minSdk:")
+          for line in content.splitlines():
+              if "minSdk" in line:
+                  print(line)
+          PY
 
       - name: Instalar dependencias
         run: flutter pub get
