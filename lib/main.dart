@@ -1,3 +1,4 @@
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -567,9 +568,7 @@ class _AccessScreenState extends State<AccessScreen> {
         );
       }
 
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      if (mounted) Navigator.of(context).pop();
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -832,7 +831,110 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// NUEVA PANTALLA DE INICIO
+// DATOS DE PELÍCULAS DE DEMOSTRACIÓN
+
+class MovieData {
+  final String title;
+  final String category;
+  final String description;
+  final String duration;
+  final String image;
+
+  const MovieData({
+    required this.title,
+    required this.category,
+    required this.description,
+    required this.duration,
+    required this.image,
+  });
+}
+
+const List<MovieData> movies = [
+  MovieData(
+    title: 'Universo desconocido',
+    category: 'Ciencia ficción',
+    description:
+        'Una expedición se adentra en los misterios del universo para descubrir mundos y secretos que cambiarán su destino.',
+    duration: '1 h 48 min',
+    image:
+        'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=900',
+  ),
+  MovieData(
+    title: 'Mundo salvaje',
+    category: 'Aventura',
+    description:
+        'Un viaje por paisajes extraordinarios donde la naturaleza revela toda su fuerza y belleza.',
+    duration: '1 h 35 min',
+    image:
+        'https://images.unsplash.com/photo-1511497584788-876760111969?w=900',
+  ),
+  MovieData(
+    title: 'La gran aventura',
+    category: 'Acción',
+    description:
+        'Una aventura llena de desafíos, descubrimientos y decisiones que pondrán a prueba a sus protagonistas.',
+    duration: '2 h 05 min',
+    image:
+        'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900',
+  ),
+  MovieData(
+    title: 'Más allá del espacio',
+    category: 'Fantasía',
+    description:
+        'Una travesía imaginaria hacia lugares sorprendentes más allá de las estrellas.',
+    duration: '1 h 52 min',
+    image:
+        'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=900',
+  ),
+  MovieData(
+    title: 'Horizonte azul',
+    category: 'Drama',
+    description:
+        'Una historia sobre nuevos comienzos, esperanza y la fuerza para seguir adelante.',
+    duration: '1 h 41 min',
+    image:
+        'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=900',
+  ),
+  MovieData(
+    title: 'Noche estelar',
+    category: 'Ciencia ficción',
+    description:
+        'Un misterio en el espacio lleva a un grupo de exploradores a enfrentar lo desconocido.',
+    duration: '1 h 56 min',
+    image:
+        'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=900',
+  ),
+  MovieData(
+    title: 'El planeta azul',
+    category: 'Documental',
+    description:
+        'Un recorrido visual por algunos de los paisajes más fascinantes de nuestro planeta.',
+    duration: '1 h 20 min',
+    image:
+        'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=900',
+  ),
+  MovieData(
+    title: 'Camino a la cima',
+    category: 'Aventura',
+    description:
+        'Una aventura de superación en la que cada paso acerca a los protagonistas a su objetivo.',
+    duration: '1 h 44 min',
+    image:
+        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=900',
+  ),
+];
+
+const List<String> movieGenres = [
+  'Todas',
+  'Acción',
+  'Aventura',
+  'Ciencia ficción',
+  'Fantasía',
+  'Drama',
+  'Documental',
+];
+
+// INICIO
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -848,36 +950,12 @@ class HomePage extends StatelessWidget {
     CategoryData('Educación', Icons.school_rounded),
   ];
 
-  static const List<MediaData> movies = [
-    MediaData(
-      'Universo desconocido',
-      'Ciencia ficción',
-      'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=700',
-    ),
-    MediaData(
-      'Mundo salvaje',
-      'Aventura',
-      'https://images.unsplash.com/photo-1511497584788-876760111969?w=700',
-    ),
-    MediaData(
-      'La gran aventura',
-      'Acción',
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=700',
-    ),
-    MediaData(
-      'Más allá del espacio',
-      'Fantasía',
-      'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=700',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 15, 18, 25),
         children: [
-          // ENCABEZADO
           Row(
             children: [
               Container(
@@ -923,7 +1001,14 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProfilePage(),
+                    ),
+                  );
+                },
                 icon: const Icon(
                   Icons.account_circle_outlined,
                   color: Colors.white70,
@@ -932,9 +1017,7 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 25),
-
           const Text(
             'TU MUNDO.',
             style: TextStyle(
@@ -960,10 +1043,9 @@ class HomePage extends StatelessWidget {
               fontSize: 13,
             ),
           ),
-
           const SizedBox(height: 25),
 
-          // BANNER DESTACADO
+          // BANNER
           ClipRRect(
             borderRadius: BorderRadius.circular(22),
             child: Stack(
@@ -1062,13 +1144,14 @@ class HomePage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const CategoryPage(
-                                  title: 'Destacados',
-                                ),
+                                builder: (_) => const MoviesPage(),
                               ),
                             );
                           },
-                          icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                          icon: const Icon(
+                            Icons.play_arrow_rounded,
+                            size: 20,
+                          ),
                           label: const Text(
                             'DESCUBRIR',
                             style: TextStyle(
@@ -1079,9 +1162,6 @@ class HomePage extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: azul,
                             foregroundColor: fondo,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                            ),
                           ),
                         ),
                       ),
@@ -1093,8 +1173,6 @@ class HomePage extends StatelessWidget {
           ),
 
           const SizedBox(height: 28),
-
-          // PELÍCULAS Y SERIES
           const SectionHeader(
             title: 'PELÍCULAS Y SERIES',
             subtitle: 'Historias para cada momento',
@@ -1106,17 +1184,15 @@ class HomePage extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: movies.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 13),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: 13),
               itemBuilder: (context, index) {
-                final movie = movies[index];
-                return MediaCard(media: movie);
+                return MediaCard(media: movies[index]);
               },
             ),
           ),
 
           const SizedBox(height: 28),
-
-          // CATEGORÍAS
           const SectionHeader(
             title: 'EXPLORA TU UNIVERSO',
             subtitle: 'Todo lo que te gusta en un solo lugar',
@@ -1140,12 +1216,22 @@ class HomePage extends StatelessWidget {
               return InkWell(
                 borderRadius: BorderRadius.circular(17),
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CategoryPage(title: item.name),
-                    ),
-                  );
+                  if (item.name == 'Películas') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MoviesPage(),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            CategoryPage(title: item.name),
+                      ),
+                    );
+                  }
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -1171,7 +1257,8 @@ class HomePage extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(13),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
@@ -1198,7 +1285,6 @@ class HomePage extends StatelessWidget {
           ),
 
           const SizedBox(height: 25),
-
           Container(
             padding: const EdgeInsets.all(17),
             decoration: BoxDecoration(
@@ -1252,7 +1338,566 @@ class HomePage extends StatelessWidget {
   }
 }
 
-// TÍTULOS DE SECCIÓN
+// CATÁLOGO DE PELÍCULAS
+
+class MoviesPage extends StatefulWidget {
+  const MoviesPage({super.key});
+
+  @override
+  State<MoviesPage> createState() => _MoviesPageState();
+}
+
+class _MoviesPageState extends State<MoviesPage> {
+  final searchController = TextEditingController();
+  String selectedGenre = 'Todas';
+
+  List<MovieData> get filteredMovies {
+    return movies.where((movie) {
+      final matchesGenre = selectedGenre == 'Todas' ||
+          movie.category == selectedGenre;
+
+      final query = searchController.text.toLowerCase().trim();
+      final matchesSearch = movie.title.toLowerCase().contains(query) ||
+          movie.category.toLowerCase().contains(query);
+
+      return matchesGenre && matchesSearch;
+    }).toList();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final results = filteredMovies;
+
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(
+        backgroundColor: fondo,
+        title: const Text(
+          'PELÍCULAS',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: azul),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 25),
+          children: [
+            const Text(
+              'TU PRÓXIMA HISTORIA',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Encuentra algo que te encante.',
+              style: TextStyle(color: Colors.white60),
+            ),
+            const SizedBox(height: 20),
+
+            // BUSCADOR
+            TextField(
+              controller: searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Buscar películas o géneros...',
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: azul,
+                ),
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    searchController.clear();
+                    setState(() {});
+                  },
+                  icon: const Icon(Icons.close),
+                ),
+                filled: true,
+                fillColor: panel,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 22),
+            const Text(
+              'EXPLORAR POR GÉNERO',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // FILTROS
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: movieGenres.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final genre = movieGenres[index];
+                  final active = selectedGenre == genre;
+
+                  return ChoiceChip(
+                    label: Text(genre),
+                    selected: active,
+                    onSelected: (_) {
+                      setState(() => selectedGenre = genre);
+                    },
+                    selectedColor: azul,
+                    backgroundColor: panel,
+                    labelStyle: TextStyle(
+                      color: active ? fondo : Colors.white70,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                    side: BorderSide(
+                      color: active ? azul : Colors.white12,
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'CATÁLOGO NEXORA',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${results.length} títulos',
+                  style: const TextStyle(
+                    color: azul,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+
+            // RESULTADOS
+            if (results.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 55),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.search_off_rounded,
+                      color: azul,
+                      size: 55,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'No encontramos películas.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'Prueba con otro nombre o género.',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: results.length,
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 13,
+                  mainAxisSpacing: 18,
+                  childAspectRatio: 0.61,
+                ),
+                itemBuilder: (context, index) {
+                  return MoviePoster(movie: results[index]);
+                },
+              ),
+
+            const SizedBox(height: 20),
+            const Text(
+              'Los títulos e imágenes actuales son demostrativos.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// TARJETA DEL CATÁLOGO
+
+class MoviePoster extends StatelessWidget {
+  final MovieData movie;
+
+  const MoviePoster({super.key, required this.movie});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MovieDetailPage(movie: movie),
+          ),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: azul.withOpacity(0.3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: azul.withOpacity(0.08),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      movie.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        return Container(
+                          color: panel,
+                          child: const Icon(
+                            Icons.movie_outlined,
+                            color: azul,
+                            size: 45,
+                          ),
+                        );
+                      },
+                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        height: 85,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              fondo.withOpacity(0.95),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Positioned(
+                      right: 9,
+                      top: 9,
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white,
+                        size: 29,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            movie.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            movie.category,
+            style: const TextStyle(
+              color: azul,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// DETALLES DE LA PELÍCULA
+
+class MovieDetailPage extends StatefulWidget {
+  final MovieData movie;
+
+  const MovieDetailPage({
+    super.key,
+    required this.movie,
+  });
+
+  @override
+  State<MovieDetailPage> createState() => _MovieDetailPageState();
+}
+
+class _MovieDetailPageState extends State<MovieDetailPage> {
+  bool saved = false;
+
+  void mostrarAviso() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'La reproducción estará disponible cuando conectemos contenido autorizado.',
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final movie = widget.movie;
+
+    return Scaffold(
+      backgroundColor: fondo,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 330,
+            pinned: true,
+            backgroundColor: fondo,
+            iconTheme: const IconThemeData(color: Colors.white),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    movie.image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return Container(
+                        color: panel,
+                        child: const Icon(
+                          Icons.movie,
+                          color: azul,
+                          size: 70,
+                        ),
+                      );
+                    },
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          fondo.withOpacity(0.4),
+                          fondo,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 35),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: azul.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: azul.withOpacity(0.6)),
+                    ),
+                    child: Text(
+                      movie.category.toUpperCase(),
+                      style: const TextStyle(
+                        color: azul,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    movie.title,
+                    style: const TextStyle(
+                      fontSize: 27,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        color: azul,
+                        size: 17,
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        movie.duration,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(width: 18),
+                      const Icon(
+                        Icons.hd_rounded,
+                        color: azul,
+                        size: 21,
+                      ),
+                      const SizedBox(width: 5),
+                      const Text(
+                        'Ficha de demostración',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 25),
+                  const Text(
+                    'SINOPSIS',
+                    style: TextStyle(
+                      color: azul,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    movie.description,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      height: 1.6,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton.icon(
+                      onPressed: mostrarAviso,
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text(
+                        'REPRODUCIR',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.3,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: azul,
+                        foregroundColor: fondo,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 13),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() => saved = !saved);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              saved
+                                  ? 'Agregada a tu lista.'
+                                  : 'Eliminada de tu lista.',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        saved
+                            ? Icons.bookmark
+                            : Icons.bookmark_add_outlined,
+                      ),
+                      label: Text(
+                        saved
+                            ? 'AGREGADA A MI LISTA'
+                            : 'AGREGAR A MI LISTA',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: azul,
+                        side: const BorderSide(color: azul),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// TARJETAS DE INICIO
 
 class SectionHeader extends StatelessWidget {
   final String title;
@@ -1290,117 +1935,88 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-// TARJETAS DE PELÍCULAS
-
-class MediaData {
-  final String title;
-  final String category;
-  final String image;
-
-  const MediaData(this.title, this.category, this.image);
-}
-
 class MediaCard extends StatelessWidget {
-  final MediaData media;
+  final MovieData media;
 
   const MediaCard({super.key, required this.media});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 132,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: azul.withOpacity(0.25),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: azul.withOpacity(0.08),
-                    blurRadius: 12,
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MovieDetailPage(movie: media),
+          ),
+        );
+      },
+      child: SizedBox(
+        width: 132,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: azul.withOpacity(0.25),
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      media.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Color(0xFF1A3760),
-                                Color(0xFF39205B),
-                              ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        media.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) {
+                          return Container(
+                            color: panel,
+                            child: const Icon(
+                              Icons.movie_creation_outlined,
+                              color: azul,
+                              size: 45,
                             ),
-                          ),
-                          child: const Icon(
-                            Icons.movie_creation_outlined,
-                            color: azul,
-                            size: 45,
-                          ),
-                        );
-                      },
-                    ),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        height: 65,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              fondo.withOpacity(0.9),
-                            ],
-                          ),
+                          );
+                        },
+                      ),
+                      const Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Icon(
+                          Icons.play_circle_fill,
+                          color: Colors.white,
+                          size: 27,
                         ),
                       ),
-                    ),
-                    const Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Icon(
-                        Icons.play_circle_fill,
-                        color: Colors.white,
-                        size: 27,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            media.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
+            const SizedBox(height: 8),
+            Text(
+              media.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
             ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            media.category,
-            style: const TextStyle(
-              color: Color(0xFF8E9BB7),
-              fontSize: 10,
+            const SizedBox(height: 3),
+            Text(
+              media.category,
+              style: const TextStyle(
+                color: Color(0xFF8E9BB7),
+                fontSize: 10,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1413,10 +2029,54 @@ class ExplorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SimplePage(
-      icon: Icons.explore,
-      title: 'Explorar',
-      message: 'Aquí descubrirás todo el contenido de NEXORA.',
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'EXPLORAR',
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Descubre todo lo que NEXORA tiene para ti.',
+              style: TextStyle(color: Colors.white60),
+            ),
+            const SizedBox(height: 25),
+            ListTile(
+              leading: const Icon(Icons.movie, color: azul),
+              title: const Text('Películas'),
+              subtitle: const Text('Explora el catálogo'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MoviesPage(),
+                  ),
+                );
+              },
+            ),
+            const Divider(color: Colors.white12),
+            const ListTile(
+              leading: Icon(Icons.live_tv, color: morado),
+              title: Text('Series'),
+              subtitle: Text('Próximamente'),
+            ),
+            const Divider(color: Colors.white12),
+            const ListTile(
+              leading: Icon(Icons.sports_soccer, color: azul),
+              title: Text('Deportes'),
+              subtitle: Text('Próximamente'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1431,7 +2091,8 @@ class LibraryPage extends StatelessWidget {
     return const SimplePage(
       icon: Icons.bookmark,
       title: 'Mi biblioteca',
-      message: 'Aquí podrás guardar tus películas y series favoritas.',
+      message:
+          'Aquí podrás guardar tus películas y series favoritas.',
     );
   }
 }
@@ -1491,7 +2152,7 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// PÁGINAS DE CATEGORÍAS
+// CATEGORÍAS PENDIENTES
 
 class CategoryPage extends StatelessWidget {
   final String title;
