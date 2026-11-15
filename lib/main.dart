@@ -1,4 +1,3 @@
-
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -49,9 +48,7 @@ class AuthGate extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: fondo,
-            body: Center(
-              child: CircularProgressIndicator(color: azul),
-            ),
+            body: Center(child: CircularProgressIndicator(color: azul)),
           );
         }
 
@@ -96,9 +93,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void abrirAcceso(String tipo) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => AccessScreen(tipo: tipo),
-      ),
+      MaterialPageRoute(builder: (_) => AccessScreen(tipo: tipo)),
     );
   }
 
@@ -110,9 +105,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         builder: (context, constraints) {
           return Stack(
             children: [
-              Positioned.fill(
-                child: CustomPaint(painter: StarPainter()),
-              ),
+              Positioned.fill(child: CustomPaint(painter: StarPainter())),
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -177,9 +170,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               fontWeight: FontWeight.w900,
                               letterSpacing: 7,
                               color: Colors.white,
-                              shadows: [
-                                Shadow(color: azul, blurRadius: 18),
-                              ],
+                              shadows: [Shadow(color: azul, blurRadius: 18)],
                             ),
                           ),
                           const SizedBox(height: 7),
@@ -315,9 +306,7 @@ class NexoraRobot extends StatelessWidget {
                   ],
                 ),
                 border: Border.all(color: azul, width: 2),
-                boxShadow: const [
-                  BoxShadow(color: azul, blurRadius: 17),
-                ],
+                boxShadow: const [BoxShadow(color: azul, blurRadius: 17)],
               ),
               child: Center(
                 child: Container(
@@ -330,10 +319,7 @@ class NexoraRobot extends StatelessWidget {
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      RobotEye(),
-                      RobotEye(),
-                    ],
+                    children: [RobotEye(), RobotEye()],
                   ),
                 ),
               ),
@@ -348,9 +334,7 @@ class NexoraRobot extends StatelessWidget {
               decoration: BoxDecoration(
                 color: azul,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(color: azul, blurRadius: 12),
-                ],
+                boxShadow: const [BoxShadow(color: azul, blurRadius: 12)],
               ),
             ),
           ),
@@ -363,9 +347,7 @@ class NexoraRobot extends StatelessWidget {
               decoration: BoxDecoration(
                 color: morado,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(color: morado, blurRadius: 12),
-                ],
+                boxShadow: const [BoxShadow(color: morado, blurRadius: 12)],
               ),
             ),
           ),
@@ -377,10 +359,7 @@ class NexoraRobot extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF263E68),
-                    Color(0xFF101B39),
-                  ],
+                  colors: [Color(0xFF263E68), Color(0xFF101B39)],
                 ),
                 border: Border.all(color: morado, width: 1.5),
               ),
@@ -408,15 +387,13 @@ class RobotEye extends StatelessWidget {
       decoration: BoxDecoration(
         color: azul,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(color: azul, blurRadius: 12),
-        ],
+        boxShadow: const [BoxShadow(color: azul, blurRadius: 12)],
       ),
     );
   }
 }
 
-// BOTONES Y CATEGORÍAS DE LA PORTADA
+// BOTONES Y CATEGORÍAS
 
 class NeonButton extends StatelessWidget {
   final String text;
@@ -794,10 +771,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: fondo,
-      body: IndexedStack(
-        index: selected,
-        children: pages,
-      ),
+      body: IndexedStack(index: selected, children: pages),
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFF11182B),
         indicatorColor: azul.withOpacity(0.18),
@@ -964,14 +938,9 @@ class HomePage extends StatelessWidget {
                 height: 43,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
-                  gradient: const LinearGradient(
-                    colors: [azul, morado],
-                  ),
+                  gradient: const LinearGradient(colors: [azul, morado]),
                   boxShadow: [
-                    BoxShadow(
-                      color: azul.withOpacity(0.25),
-                      blurRadius: 15,
-                    ),
+                    BoxShadow(color: azul.withOpacity(0.25), blurRadius: 15),
                   ],
                 ),
                 child: const Icon(
@@ -987,9 +956,7 @@ class HomePage extends StatelessWidget {
                   fontSize: 25,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 3,
-                  shadows: [
-                    Shadow(color: azul, blurRadius: 12),
-                  ],
+                  shadows: [Shadow(color: azul, blurRadius: 12)],
                 ),
               ),
               const Spacer(),
@@ -1005,9 +972,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProfilePage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const ProfilePage()),
                   );
                 },
                 icon: const Icon(
@@ -1021,11 +986,7 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 25),
           const Text(
             'TU MUNDO.',
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
+            style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
           ),
           const Text(
             'TU ENTRETENIMIENTO.',
@@ -1039,10 +1000,7 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             'Descubre un universo hecho para ti.',
-            style: TextStyle(
-              color: Color(0xFF9BAAC8),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Color(0xFF9BAAC8), fontSize: 13),
           ),
           const SizedBox(height: 25),
           ClipRRect(
@@ -1055,7 +1013,7 @@ class HomePage extends StatelessWidget {
                   child: Image.network(
                     'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200',
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
+                    errorBuilder: (_, __, ___) {
                       return Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -1130,10 +1088,7 @@ class HomePage extends StatelessWidget {
                       const SizedBox(height: 5),
                       const Text(
                         'Tu próxima historia comienza aquí.',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 11),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
@@ -1147,10 +1102,7 @@ class HomePage extends StatelessWidget {
                               ),
                             );
                           },
-                          icon: const Icon(
-                            Icons.play_arrow_rounded,
-                            size: 20,
-                          ),
+                          icon: const Icon(Icons.play_arrow_rounded, size: 20),
                           label: const Text(
                             'DESCUBRIR',
                             style: TextStyle(
@@ -1197,8 +1149,7 @@ class HomePage extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: categories.length,
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -1232,14 +1183,9 @@ class HomePage extends StatelessWidget {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF192C4B),
-                        Color(0xFF211A40),
-                      ],
+                      colors: [Color(0xFF192C4B), Color(0xFF211A40)],
                     ),
-                    border: Border.all(
-                      color: azul.withOpacity(0.25),
-                    ),
+                    border: Border.all(color: azul.withOpacity(0.25)),
                     boxShadow: [
                       BoxShadow(
                         color: morado.withOpacity(0.08),
@@ -1277,14 +1223,9 @@ class HomePage extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               gradient: LinearGradient(
-                colors: [
-                  azul.withOpacity(0.15),
-                  morado.withOpacity(0.15),
-                ],
+                colors: [azul.withOpacity(0.15), morado.withOpacity(0.15)],
               ),
-              border: Border.all(
-                color: azul.withOpacity(0.25),
-              ),
+              border: Border.all(color: azul.withOpacity(0.25)),
             ),
             child: const Row(
               children: [
@@ -1304,10 +1245,7 @@ class HomePage extends StatelessWidget {
                       SizedBox(height: 5),
                       Text(
                         'Disfruta, explora y descubre nuevas experiencias.',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 11),
                       ),
                     ],
                   ),
@@ -1336,10 +1274,11 @@ class _MoviesPageState extends State<MoviesPage> {
 
   List<MovieData> get filteredMovies {
     return movies.where((movie) {
-      final matchesGenre = selectedGenre == 'Todas' ||
-          movie.category == selectedGenre;
+      final matchesGenre =
+          selectedGenre == 'Todas' || movie.category == selectedGenre;
       final query = searchController.text.toLowerCase().trim();
-      final matchesSearch = movie.title.toLowerCase().contains(query) ||
+      final matchesSearch =
+          movie.title.toLowerCase().contains(query) ||
           movie.category.toLowerCase().contains(query);
       return matchesGenre && matchesSearch;
     }).toList();
@@ -1361,10 +1300,7 @@ class _MoviesPageState extends State<MoviesPage> {
         backgroundColor: fondo,
         title: const Text(
           'PELÍCULAS',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
         ),
         iconTheme: const IconThemeData(color: azul),
       ),
@@ -1374,10 +1310,7 @@ class _MoviesPageState extends State<MoviesPage> {
           children: [
             const Text(
               'TU PRÓXIMA HISTORIA',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             const Text(
@@ -1470,26 +1403,16 @@ class _MoviesPageState extends State<MoviesPage> {
                 padding: EdgeInsets.symmetric(vertical: 55),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.search_off_rounded,
-                      color: azul,
-                      size: 55,
-                    ),
+                    Icon(Icons.search_off_rounded, color: azul, size: 55),
                     SizedBox(height: 12),
                     Text(
                       'No encontramos películas.',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 15,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 15),
                     ),
                     SizedBox(height: 5),
                     Text(
                       'Prueba con otro nombre o género.',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1499,8 +1422,7 @@ class _MoviesPageState extends State<MoviesPage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: results.length,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 13,
                   mainAxisSpacing: 18,
@@ -1514,10 +1436,7 @@ class _MoviesPageState extends State<MoviesPage> {
             const Text(
               'Los títulos e imágenes actuales son demostrativos.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white38,
-                fontSize: 10,
-              ),
+              style: TextStyle(color: Colors.white38, fontSize: 10),
             ),
           ],
         ),
@@ -1555,10 +1474,7 @@ class MoviePoster extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: azul.withOpacity(0.3)),
                 boxShadow: [
-                  BoxShadow(
-                    color: azul.withOpacity(0.08),
-                    blurRadius: 12,
-                  ),
+                  BoxShadow(color: azul.withOpacity(0.08), blurRadius: 12),
                 ],
               ),
               child: ClipRRect(
@@ -1615,10 +1531,7 @@ class MoviePoster extends StatelessWidget {
             movie.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1636,10 +1549,7 @@ class MoviePoster extends StatelessWidget {
 class MovieDetailPage extends StatefulWidget {
   final MovieData movie;
 
-  const MovieDetailPage({
-    super.key,
-    required this.movie,
-  });
+  const MovieDetailPage({super.key, required this.movie});
 
   @override
   State<MovieDetailPage> createState() => _MovieDetailPageState();
@@ -1753,18 +1663,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         style: const TextStyle(color: Colors.white70),
                       ),
                       const SizedBox(width: 18),
-                      const Icon(
-                        Icons.hd_rounded,
-                        color: azul,
-                        size: 21,
-                      ),
+                      const Icon(Icons.hd_rounded, color: azul, size: 21),
                       const SizedBox(width: 5),
                       const Text(
                         'Ficha de demostración',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 11),
                       ),
                     ],
                   ),
@@ -1860,10 +1763,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 class PlayerScreen extends StatefulWidget {
   final MovieData movie;
 
-  const PlayerScreen({
-    super.key,
-    required this.movie,
-  });
+  const PlayerScreen({super.key, required this.movie});
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -1872,6 +1772,7 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   late final VideoPlayerController controller;
   bool hasError = false;
+  bool initialized = false;
 
   @override
   void initState() {
@@ -1883,22 +1784,39 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ),
     );
 
-    inicializarReproductor();
+    _initializePlayer();
   }
 
-  Future<void> inicializarReproductor() async {
+  Future<void> _initializePlayer() async {
     try {
       await controller.initialize();
 
       if (!mounted) return;
 
-      setState(() {});
+      setState(() {
+        initialized = true;
+      });
+
       await controller.play();
     } catch (_) {
       if (mounted) {
-        setState(() => hasError = true);
+        setState(() {
+          hasError = true;
+        });
       }
     }
+  }
+
+  String formatTime(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final hours = duration.inHours;
+
+    if (hours > 0) {
+      return '$hours:$minutes:$seconds';
+    }
+
+    return '$minutes:$seconds';
   }
 
   @override
@@ -1907,223 +1825,152 @@ class _PlayerScreenState extends State<PlayerScreen> {
     super.dispose();
   }
 
-  String formatoTiempo(Duration tiempo) {
-    final minutos = tiempo.inMinutes.remainder(60);
-    final segundos = tiempo.inSeconds.remainder(60);
-    final horas = tiempo.inHours;
-
-    if (horas > 0) {
-      return '$horas:${minutos.toString().padLeft(2, '0')}:${segundos.toString().padLeft(2, '0')}';
-    }
-
-    return '$minutos:${segundos.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text(
-          'NEXORA PLAYER',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.5,
-            fontSize: 16,
-          ),
+        title: Text(
+          widget.movie.title,
+          style: const TextStyle(fontSize: 16),
         ),
-        iconTheme: const IconThemeData(color: azul),
       ),
       body: SafeArea(
         child: Center(
           child: hasError
-              ? Padding(
-                  padding: const EdgeInsets.all(25),
+              ? const Padding(
+                  padding: EdgeInsets.all(25),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
-                        color: morado,
-                        size: 60,
+                        color: azul,
+                        size: 55,
                       ),
-                      const SizedBox(height: 15),
-                      const Text(
+                      SizedBox(height: 15),
+                      Text(
                         'No se pudo cargar el video.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 17),
+                        style: TextStyle(color: Colors.white),
                       ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Comprueba tu conexión a internet e inténtalo de nuevo.',
+                      SizedBox(height: 8),
+                      Text(
+                        'Comprueba tu conexión a internet e inténtalo nuevamente.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white60),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() => hasError = false);
-                          inicializarReproductor();
-                        },
-                        child: const Text('INTENTAR DE NUEVO'),
                       ),
                     ],
                   ),
                 )
-              : !controller.value.isInitialized
+              : !initialized
                   ? const Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircularProgressIndicator(color: azul),
                         SizedBox(height: 18),
                         Text(
-                          'Preparando reproducción...',
-                          style: TextStyle(color: Colors.white70),
+                          'CARGANDO VIDEO...',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ],
                     )
-                  : Padding(
-                      padding: const EdgeInsets.all(15),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            widget.movie.title,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 21,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'VIDEO DE DEMOSTRACIÓN',
+                          style: TextStyle(
+                            color: azul,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                            fontSize: 11,
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'VIDEO DE DEMOSTRACIÓN',
-                            style: TextStyle(
-                              color: azul,
-                              fontSize: 11,
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 25),
-                          AspectRatio(
-                            aspectRatio: controller.value.aspectRatio,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: VideoPlayer(controller),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          VideoProgressIndicator(
+                        ),
+                        const SizedBox(height: 15),
+                        AspectRatio(
+                          aspectRatio: controller.value.aspectRatio,
+                          child: VideoPlayer(controller),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 15, 18, 5),
+                          child: VideoProgressIndicator(
                             controller,
                             allowScrubbing: true,
                             colors: const VideoProgressColors(
                               playedColor: azul,
-                              bufferedColor: Colors.white38,
+                              bufferedColor: Colors.white30,
                               backgroundColor: Colors.white12,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          ValueListenableBuilder<VideoPlayerValue>(
-                            valueListenable: controller,
-                            builder: (context, value, child) {
-                              return Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                        ),
+                        ValueListenableBuilder<VideoPlayerValue>(
+                          valueListenable: controller,
+                          builder: (context, value, child) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 18),
+                              child: Row(
                                 children: [
                                   Text(
-                                    formatoTiempo(value.position),
+                                    formatTime(value.position),
                                     style: const TextStyle(
                                       color: Colors.white70,
                                       fontSize: 12,
                                     ),
                                   ),
-                                  Text(
-                                    formatoTiempo(value.duration),
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 15),
-                          ValueListenableBuilder<VideoPlayerValue>(
-                            valueListenable: controller,
-                            builder: (context, value, child) {
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
+                                  const Spacer(),
                                   IconButton(
                                     onPressed: () async {
-                                      final nuevaPosicion =
-                                          value.position -
-                                              const Duration(seconds: 10);
-                                      await controller.seekTo(
-                                        nuevaPosicion < Duration.zero
-                                            ? Duration.zero
-                                            : nuevaPosicion,
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.replay_10_rounded,
-                                      color: Colors.white,
-                                      size: 35,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  Container(
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: azul,
-                                    ),
-                                    child: IconButton(
-                                      onPressed: () {
-                                        if (value.isPlaying) {
-                                          controller.pause();
-                                        } else {
-                                          if (value.isCompleted) {
-                                            controller.seekTo(Duration.zero);
-                                          }
-                                          controller.play();
+                                      if (value.isPlaying) {
+                                        await controller.pause();
+                                      } else {
+                                        if (value.isCompleted) {
+                                          await controller.seekTo(
+                                            Duration.zero,
+                                          );
                                         }
-                                      },
-                                      icon: Icon(
-                                        value.isPlaying
-                                            ? Icons.pause_rounded
-                                            : Icons.play_arrow_rounded,
-                                        color: fondo,
-                                        size: 38,
-                                      ),
+                                        await controller.play();
+                                      }
+                                    },
+                                    icon: Icon(
+                                      value.isPlaying
+                                          ? Icons.pause_circle_filled
+                                          : Icons.play_circle_fill,
+                                      color: azul,
+                                      size: 55,
                                     ),
                                   ),
-                                  const SizedBox(width: 20),
-                                  IconButton(
-                                    onPressed: () async {
-                                      final nuevaPosicion =
-                                          value.position +
-                                              const Duration(seconds: 10);
-                                      await controller.seekTo(
-                                        nuevaPosicion > value.duration
-                                            ? value.duration
-                                            : nuevaPosicion,
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.forward_10_rounded,
-                                      color: Colors.white,
-                                      size: 35,
+                                  const Spacer(),
+                                  Text(
+                                    formatTime(value.duration),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
-                              );
-                            },
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 25),
+                          child: Text(
+                            'Este contenido es una prueba técnica del reproductor NEXORA.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
         ),
       ),
@@ -2159,10 +2006,7 @@ class SectionHeader extends StatelessWidget {
         const SizedBox(height: 5),
         Text(
           subtitle,
-          style: const TextStyle(
-            color: Color(0xFF8E9BB7),
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: Color(0xFF8E9BB7), fontSize: 11),
         ),
       ],
     );
@@ -2234,10 +2078,7 @@ class MediaCard extends StatelessWidget {
               media.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
             ),
             const SizedBox(height: 3),
             Text(
@@ -2269,10 +2110,7 @@ class ExplorePage extends StatelessWidget {
           children: [
             const Text(
               'EXPLORAR',
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.w900,
-              ),
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -2288,9 +2126,7 @@ class ExplorePage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const MoviesPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const MoviesPage()),
                 );
               },
             ),
@@ -2323,8 +2159,7 @@ class LibraryPage extends StatelessWidget {
     return const SimplePage(
       icon: Icons.bookmark,
       title: 'Mi biblioteca',
-      message:
-          'Aquí podrás guardar tus películas y series favoritas.',
+      message: 'Aquí podrás guardar tus películas y series favoritas.',
     );
   }
 }
@@ -2347,18 +2182,11 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.account_circle,
-                color: azul,
-                size: 65,
-              ),
+              const Icon(Icons.account_circle, color: azul, size: 65),
               const SizedBox(height: 20),
               const Text(
                 'Mi perfil',
-                style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Text(
@@ -2395,20 +2223,14 @@ class CategoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: fondo,
-      appBar: AppBar(
-        backgroundColor: fondo,
-        title: Text(title),
-      ),
+      appBar: AppBar(backgroundColor: fondo, title: Text(title)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(25),
           child: Text(
             'Próximamente encontrarás contenido de $title.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.white70,
-            ),
+            style: const TextStyle(fontSize: 18, color: Colors.white70),
           ),
         ),
       ),
