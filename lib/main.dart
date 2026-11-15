@@ -1,3 +1,4 @@
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -35,8 +36,6 @@ class NexoraApp extends StatelessWidget {
   }
 }
 
-// PROTECCIÓN DE ACCESO
-
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -62,7 +61,7 @@ class AuthGate extends StatelessWidget {
   }
 }
 
-// PORTADA
+// PORTADA NEXORA
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -80,7 +79,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     super.initState();
     animation = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
   }
 
@@ -105,15 +104,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         builder: (context, constraints) {
           return Stack(
             children: [
-              Positioned.fill(child: CustomPaint(painter: StarPainter())),
+              const Positioned.fill(child: CustomPaint(painter: StarPainter())),
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      center: const Alignment(0, -0.2),
-                      radius: 1.1,
+                      center: const Alignment(0, 0.05),
+                      radius: 1.15,
                       colors: [
-                        const Color(0xFF17234B).withOpacity(0.65),
+                        const Color(0xFF142D67).withOpacity(0.72),
+                        const Color(0xFF100D32).withOpacity(0.65),
                         fondo,
                       ],
                     ),
@@ -127,127 +127,176 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       minHeight: constraints.maxHeight,
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 25,
-                        vertical: 20,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(22, 12, 22, 18),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: IconButton(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Configuración próximamente.',
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.settings_rounded,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ),
+                          ),
                           AnimatedBuilder(
                             animation: animation,
                             builder: (context, child) {
                               return Container(
-                                padding: const EdgeInsets.all(13),
+                                padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
                                       color: azul.withOpacity(
-                                        0.15 + animation.value * 0.25,
+                                        0.35 + animation.value * 0.3,
                                       ),
-                                      blurRadius: 25 + animation.value * 20,
-                                      spreadRadius: 2,
+                                      blurRadius: 25 + animation.value * 18,
+                                      spreadRadius: 3,
+                                    ),
+                                    BoxShadow(
+                                      color: morado.withOpacity(0.25),
+                                      blurRadius: 30,
                                     ),
                                   ],
-                                  border: Border.all(
-                                    color: azul.withOpacity(0.5),
-                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.change_history_rounded,
-                                  color: azul,
-                                  size: 43,
-                                ),
+                                child: child,
                               );
                             },
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'NEXORA',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 7,
-                              color: Colors.white,
-                              shadows: [Shadow(color: azul, blurRadius: 18)],
-                            ),
+                            child: const NexoraLogo(size: 112),
                           ),
                           const SizedBox(height: 7),
                           const Text(
-                            'TU MUNDO. TU ENTRETENIMIENTO.',
+                            'NEXORA',
+                            style: TextStyle(
+                              fontSize: 43,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 5,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(color: azul, blurRadius: 18),
+                                Shadow(color: morado, blurRadius: 28),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          const Text(
+                            'Tu mundo. Tu entretenimiento.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Color(0xFFB7C7E8),
-                              fontSize: 10,
-                              letterSpacing: 3,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          const NexoraRobot(),
-                          const SizedBox(height: 25),
-                          const Text(
-                            'TODO TU ENTRETENIMIENTO',
-                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(height: 9),
-                          const Text(
-                            'Explora un universo de contenido',
-                            style: TextStyle(
-                              color: Color(0xFF9BAAC8),
-                              fontSize: 13,
+                          Container(
+                            margin: const EdgeInsets.only(top: 13),
+                            height: 2,
+                            width: 210,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [azul, morado, azul],
+                              ),
+                              borderRadius: BorderRadius.circular(5),
+                              boxShadow: const [
+                                BoxShadow(color: morado, blurRadius: 12),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 25),
+                          const SizedBox(height: 18),
+                          const WelcomeMascot(),
+                          const SizedBox(height: 15),
                           NeonButton(
-                            text: 'INICIAR SESIÓN',
-                            icon: Icons.login_rounded,
+                            text: 'Iniciar Sesión',
+                            icon: Icons.person_rounded,
                             color: azul,
                             onTap: () => abrirAcceso('Iniciar sesión'),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 13),
                           NeonButton(
-                            text: 'CREAR CUENTA',
+                            text: 'Crear Cuenta',
                             icon: Icons.person_add_alt_1_rounded,
                             color: morado,
                             onTap: () => abrirAcceso('Crear cuenta'),
                           ),
-                          const SizedBox(height: 28),
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              CategoryIcon(
-                                icon: Icons.movie_outlined,
-                                label: 'PELÍCULAS',
+                          const SizedBox(height: 22),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 13,
+                              horizontal: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xD9081028),
+                              borderRadius: BorderRadius.circular(23),
+                              border: Border.all(
+                                color: azul.withOpacity(0.35),
                               ),
-                              CategoryIcon(
-                                icon: Icons.live_tv_rounded,
-                                label: 'SERIES',
-                              ),
-                              CategoryIcon(
-                                icon: Icons.sports_soccer,
-                                label: 'DEPORTES',
-                              ),
-                              CategoryIcon(
-                                icon: Icons.music_note_rounded,
-                                label: 'MÚSICA',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 27),
-                          const Text(
-                            'DISFRUTA  ·  EXPLORA  ·  DESCUBRE',
-                            style: TextStyle(
-                              color: Color(0xFF657493),
-                              fontSize: 9,
-                              letterSpacing: 2,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: azul.withOpacity(0.10),
+                                  blurRadius: 18,
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                WelcomeCategory(
+                                  icon: Icons.movie_creation_rounded,
+                                  label: 'Películas',
+                                ),
+                                WelcomeDivider(),
+                                WelcomeCategory(
+                                  icon: Icons.live_tv_rounded,
+                                  label: 'Series',
+                                ),
+                                WelcomeDivider(),
+                                WelcomeCategory(
+                                  icon: Icons.sports_esports_rounded,
+                                  label: 'Juegos',
+                                ),
+                                WelcomeDivider(),
+                                WelcomeCategory(
+                                  icon: Icons.star_rounded,
+                                  label: 'Y mucho más...',
+                                ),
+                              ],
                             ),
                           ),
+                          const SizedBox(height: 21),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Expanded(child: NeonLine()),
+                              SizedBox(width: 10),
+                              Text(
+                                'DISFRUTA  ·  EXPLORA  ·  DESCUBRE',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: azul,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(child: NeonLine()),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     ),
@@ -262,7 +311,165 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 }
 
-// ROBOT
+class NexoraLogo extends StatelessWidget {
+  final double size;
+
+  const NexoraLogo({super.key, this.size = 100});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Transform.rotate(
+            angle: -0.55,
+            child: Container(
+              width: size * 0.94,
+              height: size * 0.36,
+              decoration: BoxDecoration(
+                border: Border.all(color: azul, width: 4),
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: const [
+                  BoxShadow(color: azul, blurRadius: 13),
+                ],
+              ),
+            ),
+          ),
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [azul, Colors.white, morado],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(bounds),
+            child: Icon(
+              Icons.change_history_rounded,
+              size: size * 0.88,
+              color: Colors.white,
+            ),
+          ),
+          Icon(
+            Icons.play_arrow_rounded,
+            size: size * 0.35,
+            color: Colors.white,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class WelcomeMascot extends StatelessWidget {
+  const WelcomeMascot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 285,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 7,
+            child: Container(
+              width: 235,
+              height: 65,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: azul.withOpacity(0.45),
+                    blurRadius: 42,
+                    spreadRadius: 9,
+                  ),
+                  BoxShadow(
+                    color: morado.withOpacity(0.35),
+                    blurRadius: 55,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            bottom: 45,
+            child: Transform.rotate(
+              angle: -0.15,
+              child: const Icon(
+                Icons.movie_filter_rounded,
+                color: Color(0xFF9D7BFF),
+                size: 76,
+                shadows: [Shadow(color: morado, blurRadius: 18)],
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: 75,
+            child: Transform.rotate(
+              angle: 0.12,
+              child: Container(
+                width: 72,
+                height: 62,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111B42),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: morado, width: 2),
+                  boxShadow: const [
+                    BoxShadow(color: morado, blurRadius: 15),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: azul,
+                  size: 49,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 8,
+            bottom: 5,
+            child: const Icon(
+              Icons.local_movies_rounded,
+              color: Color(0xFFFFB6DC),
+              size: 57,
+              shadows: [Shadow(color: morado, blurRadius: 15)],
+            ),
+          ),
+          Positioned(
+            left: 5,
+            top: 18,
+            child: Icon(
+              Icons.star,
+              color: azul.withOpacity(0.9),
+              size: 18,
+              shadows: const [Shadow(color: azul, blurRadius: 12)],
+            ),
+          ),
+          Positioned(
+            right: 25,
+            top: 18,
+            child: Icon(
+              Icons.auto_awesome,
+              color: morado.withOpacity(0.95),
+              size: 22,
+              shadows: const [Shadow(color: morado, blurRadius: 12)],
+            ),
+          ),
+          const Positioned(
+            bottom: 0,
+            child: NexoraRobot(),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class NexoraRobot extends StatelessWidget {
   const NexoraRobot({super.key});
@@ -270,56 +477,137 @@ class NexoraRobot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 190,
-      height: 190,
+      width: 225,
+      height: 265,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(
-            width: 165,
-            height: 165,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: azul.withOpacity(0.20),
-                  blurRadius: 55,
-                  spreadRadius: 12,
-                ),
-              ],
+          Positioned(
+            top: 52,
+            child: Container(
+              width: 178,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: azul.withOpacity(0.18),
+                    blurRadius: 45,
+                    spreadRadius: 12,
+                  ),
+                ],
+              ),
             ),
           ),
           Positioned(
-            top: 17,
+            bottom: 0,
             child: Container(
-              width: 125,
-              height: 112,
+              width: 150,
+              height: 105,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(38),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(60),
+                  bottom: Radius.circular(25),
+                ),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF172C50),
+                    Color(0xFF070F25),
+                  ],
+                ),
+                border: Border.all(color: azul, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: azul, blurRadius: 17),
+                ],
+              ),
+              child: const Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 17),
+                  child: Text(
+                    'N',
+                    style: TextStyle(
+                      color: azul,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      shadows: [Shadow(color: azul, blurRadius: 16)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 43,
+            child: Container(
+              width: 153,
+              height: 137,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(47),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFFEAF8FF),
-                    Color(0xFF8BB7D9),
-                    Color(0xFF344C79),
+                    Color(0xFFF1FAFF),
+                    Color(0xFF9DBDD9),
+                    Color(0xFF334C78),
                   ],
                 ),
-                border: Border.all(color: azul, width: 2),
-                boxShadow: const [BoxShadow(color: azul, blurRadius: 17)],
+                border: Border.all(color: azul, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(color: azul, blurRadius: 20),
+                ],
               ),
               child: Center(
                 child: Container(
-                  width: 94,
-                  height: 65,
+                  width: 119,
+                  height: 83,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF07142C),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: azul, width: 1.5),
+                    color: const Color(0xFF07132B),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: azul, width: 2),
+                    boxShadow: const [
+                      BoxShadow(color: azul, blurRadius: 12),
+                    ],
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [RobotEye(), RobotEye()],
+                    children: [
+                      RobotEye(),
+                      RobotEye(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 8,
+            child: Container(
+              width: 150,
+              height: 57,
+              decoration: BoxDecoration(
+                color: const Color(0xFF090F28),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(65),
+                  bottom: Radius.circular(15),
+                ),
+                border: Border.all(color: azul, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: morado, blurRadius: 12),
+                ],
+              ),
+              child: const Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Text(
+                    'N',
+                    style: TextStyle(
+                      color: azul,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 22,
+                    ),
                   ),
                 ),
               ),
@@ -327,50 +615,46 @@ class NexoraRobot extends StatelessWidget {
           ),
           Positioned(
             left: 15,
-            top: 48,
-            child: Container(
-              width: 23,
-              height: 48,
-              decoration: BoxDecoration(
-                color: azul,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const [BoxShadow(color: azul, blurRadius: 12)],
-              ),
-            ),
+            top: 80,
+            child: _robotEar(azul),
           ),
           Positioned(
             right: 15,
-            top: 48,
-            child: Container(
-              width: 23,
-              height: 48,
-              decoration: BoxDecoration(
-                color: morado,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const [BoxShadow(color: morado, blurRadius: 12)],
-              ),
-            ),
+            top: 80,
+            child: _robotEar(morado),
           ),
           Positioned(
-            bottom: 5,
-            child: Container(
-              width: 112,
-              height: 48,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF263E68), Color(0xFF101B39)],
+            right: 7,
+            bottom: 78,
+            child: Transform.rotate(
+              angle: -0.65,
+              child: Container(
+                width: 43,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB8D8F2),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(color: azul, width: 2),
+                  boxShadow: const [
+                    BoxShadow(color: azul, blurRadius: 13),
+                  ],
                 ),
-                border: Border.all(color: morado, width: 1.5),
-              ),
-              child: const Icon(
-                Icons.headphones_rounded,
-                color: Colors.white,
-                size: 30,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _robotEar(Color color) {
+    return Container(
+      width: 20,
+      height: 49,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: color, blurRadius: 13)],
       ),
     );
   }
@@ -382,18 +666,86 @@ class RobotEye extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 15,
-      height: 22,
+      width: 20,
+      height: 29,
       decoration: BoxDecoration(
         color: azul,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [BoxShadow(color: azul, blurRadius: 12)],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(color: azul, blurRadius: 15),
+        ],
       ),
     );
   }
 }
 
-// BOTONES Y CATEGORÍAS
+class WelcomeCategory extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const WelcomeCategory({
+    super.key,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: azul, size: 27),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class WelcomeDivider extends StatelessWidget {
+  const WelcomeDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 47,
+      width: 1,
+      color: morado.withOpacity(0.65),
+    );
+  }
+}
+
+class NeonLine extends StatelessWidget {
+  const NeonLine({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 2,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Colors.transparent, azul],
+        ),
+        boxShadow: [
+          BoxShadow(color: azul.withOpacity(0.5), blurRadius: 8),
+        ],
+      ),
+    );
+  }
+}
+
+// BOTONES
 
 class NeonButton extends StatelessWidget {
   final String text;
@@ -413,36 +765,49 @@ class NeonButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 57,
+      height: 66,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(17),
+          borderRadius: BorderRadius.circular(40),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.28),
-              blurRadius: 17,
+              color: color.withOpacity(0.38),
+              blurRadius: 19,
               spreadRadius: 1,
             ),
           ],
         ),
-        child: ElevatedButton.icon(
+        child: ElevatedButton(
           onPressed: onTap,
-          icon: Icon(icon, color: Colors.white),
-          label: Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
-          ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: color.withOpacity(0.85),
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            backgroundColor: color == azul
+                ? const Color(0xFF0879D9)
+                : const Color(0xFF8500D7),
+            foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(17),
-              side: BorderSide(color: color, width: 1.5),
+              borderRadius: BorderRadius.circular(40),
+              side: BorderSide(color: color, width: 2),
             ),
             elevation: 0,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 31),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 31),
+            ],
           ),
         ),
       ),
@@ -450,36 +815,7 @@ class NeonButton extends StatelessWidget {
   }
 }
 
-class CategoryIcon extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const CategoryIcon({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: azul, size: 25),
-        const SizedBox(height: 7),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF9BAAC8),
-            fontSize: 8,
-            letterSpacing: 0.7,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ACCESO CON FIREBASE
+// ACCESO FIREBASE
 
 class AccessScreen extends StatefulWidget {
   final String tipo;
@@ -580,7 +916,6 @@ class _AccessScreenState extends State<AccessScreen> {
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -625,7 +960,7 @@ class _AccessScreenState extends State<AccessScreen> {
           child: Column(
             children: [
               const SizedBox(height: 35),
-              const Icon(Icons.lock_outline, color: azul, size: 55),
+              const NexoraLogo(size: 75),
               const SizedBox(height: 20),
               Text(
                 widget.tipo,
@@ -806,7 +1141,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// DATOS DE PELÍCULAS DE DEMOSTRACIÓN
+// PELÍCULAS DE DEMOSTRACIÓN
 
 class MovieData {
   final String title;
@@ -909,7 +1244,7 @@ const List<String> movieGenres = [
   'Documental',
 ];
 
-// INICIO
+// INICIO DESPUÉS DE AUTENTICARSE
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -933,29 +1268,14 @@ class HomePage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: const LinearGradient(colors: [azul, morado]),
-                  boxShadow: [
-                    BoxShadow(color: azul.withOpacity(0.25), blurRadius: 15),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.change_history_rounded,
-                  color: Colors.white,
-                  size: 29,
-                ),
-              ),
-              const SizedBox(width: 11),
+              const NexoraLogo(size: 43),
+              const SizedBox(width: 9),
               const Text(
                 'NEXORA',
                 style: TextStyle(
-                  fontSize: 25,
+                  fontSize: 24,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 3,
+                  letterSpacing: 2,
                   shadows: [Shadow(color: azul, blurRadius: 12)],
                 ),
               ),
@@ -1157,7 +1477,6 @@ class HomePage extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final item = categories[index];
-
               return InkWell(
                 borderRadius: BorderRadius.circular(17),
                 onTap: () {
@@ -1186,32 +1505,23 @@ class HomePage extends StatelessWidget {
                       colors: [Color(0xFF192C4B), Color(0xFF211A40)],
                     ),
                     border: Border.all(color: azul.withOpacity(0.25)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: morado.withOpacity(0.08),
-                        blurRadius: 12,
+                  ),
+                  padding: const EdgeInsets.all(13),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(item.icon, color: azul, size: 29),
+                      const SizedBox(height: 9),
+                      Text(
+                        item.name.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(13),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(item.icon, color: azul, size: 29),
-                        const SizedBox(height: 9),
-                        Text(
-                          item.name.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               );
@@ -1259,7 +1569,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-// CATÁLOGO DE PELÍCULAS
+// CATÁLOGO
 
 class MoviesPage extends StatefulWidget {
   const MoviesPage({super.key});
@@ -1358,7 +1668,6 @@ class _MoviesPageState extends State<MoviesPage> {
                 itemBuilder: (context, index) {
                   final genre = movieGenres[index];
                   final active = selectedGenre == genre;
-
                   return ChoiceChip(
                     label: Text(genre),
                     selected: active,
@@ -1445,8 +1754,6 @@ class _MoviesPageState extends State<MoviesPage> {
   }
 }
 
-// TARJETA DEL CATÁLOGO
-
 class MoviePoster extends StatelessWidget {
   final MovieData movie;
 
@@ -1473,9 +1780,6 @@ class MoviePoster extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: azul.withOpacity(0.3)),
-                boxShadow: [
-                  BoxShadow(color: azul.withOpacity(0.08), blurRadius: 12),
-                ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15),
@@ -1544,7 +1848,7 @@ class MoviePoster extends StatelessWidget {
   }
 }
 
-// DETALLES DE LA PELÍCULA
+// DETALLE DE PELÍCULA
 
 class MovieDetailPage extends StatefulWidget {
   final MovieData movie;
@@ -1758,7 +2062,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   }
 }
 
-// REPRODUCTOR DE VIDEO
+// REPRODUCTOR
 
 class PlayerScreen extends StatefulWidget {
   final MovieData movie;
@@ -1777,45 +2081,32 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void initState() {
     super.initState();
-
     controller = VideoPlayerController.networkUrl(
       Uri.parse(
         'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
       ),
     );
-
     _initializePlayer();
   }
 
   Future<void> _initializePlayer() async {
     try {
       await controller.initialize();
-
       if (!mounted) return;
-
-      setState(() {
-        initialized = true;
-      });
-
+      setState(() => initialized = true);
       await controller.play();
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          hasError = true;
-        });
-      }
+      if (mounted) setState(() => hasError = true);
     }
   }
 
   String formatTime(Duration duration) {
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes =
+        duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds =
+        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     final hours = duration.inHours;
-
-    if (hours > 0) {
-      return '$hours:$minutes:$seconds';
-    }
-
+    if (hours > 0) return '$hours:$minutes:$seconds';
     return '$minutes:$seconds';
   }
 
@@ -1978,7 +2269,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 }
 
-// TARJETAS DE INICIO
+// COMPONENTES GENERALES
 
 class SectionHeader extends StatelessWidget {
   final String title;
@@ -2212,7 +2503,7 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// CATEGORÍAS PENDIENTES
+// CATEGORÍAS
 
 class CategoryPage extends StatelessWidget {
   final String title;
@@ -2282,8 +2573,6 @@ class SimplePage extends StatelessWidget {
   }
 }
 
-// DATOS DE CATEGORÍAS
-
 class CategoryData {
   final String name;
   final IconData icon;
@@ -2291,18 +2580,20 @@ class CategoryData {
   const CategoryData(this.name, this.icon);
 }
 
-// FONDO DE ESTRELLAS
+// FONDO ESTRELLADO
 
 class StarPainter extends CustomPainter {
+  const StarPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
     final random = math.Random(12);
     final paint = Paint();
 
-    for (int i = 0; i < 110; i++) {
+    for (int i = 0; i < 150; i++) {
       final x = random.nextDouble() * size.width;
       final y = random.nextDouble() * size.height;
-      final radius = random.nextDouble() * 1.5 + 0.3;
+      final radius = random.nextDouble() * 1.6 + 0.3;
 
       paint.color = Colors.white.withOpacity(
         random.nextDouble() * 0.55 + 0.15,
@@ -2310,6 +2601,18 @@ class StarPainter extends CustomPainter {
 
       canvas.drawCircle(Offset(x, y), radius, paint);
     }
+
+    final linePaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Colors.transparent, azul, morado, Colors.transparent],
+      ).createShader(Rect.fromLTWH(0, size.height - 5, size.width, 5))
+      ..strokeWidth = 2;
+
+    canvas.drawLine(
+      Offset(15, size.height - 5),
+      Offset(size.width - 15, size.height - 5),
+      linePaint,
+    );
   }
 
   @override
