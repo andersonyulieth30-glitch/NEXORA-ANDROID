@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:video_player/video_player.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1044,8 +1045,6 @@ class HomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 25),
-
-          // BANNER
           ClipRRect(
             borderRadius: BorderRadius.circular(22),
             child: Stack(
@@ -1171,34 +1170,29 @@ class HomePage extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 28),
           const SectionHeader(
             title: 'PELÍCULAS Y SERIES',
             subtitle: 'Historias para cada momento',
           ),
           const SizedBox(height: 14),
-
           SizedBox(
             height: 205,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: movies.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(width: 13),
+              separatorBuilder: (_, __) => const SizedBox(width: 13),
               itemBuilder: (context, index) {
                 return MediaCard(media: movies[index]);
               },
             ),
           ),
-
           const SizedBox(height: 28),
           const SectionHeader(
             title: 'EXPLORA TU UNIVERSO',
             subtitle: 'Todo lo que te gusta en un solo lugar',
           ),
           const SizedBox(height: 15),
-
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -1227,8 +1221,7 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            CategoryPage(title: item.name),
+                        builder: (_) => CategoryPage(title: item.name),
                       ),
                     );
                   }
@@ -1257,15 +1250,10 @@ class HomePage extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(13),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          item.icon,
-                          color: azul,
-                          size: 29,
-                        ),
+                        Icon(item.icon, color: azul, size: 29),
                         const SizedBox(height: 9),
                         Text(
                           item.name.toUpperCase(),
@@ -1283,7 +1271,6 @@ class HomePage extends StatelessWidget {
               );
             },
           ),
-
           const SizedBox(height: 25),
           Container(
             padding: const EdgeInsets.all(17),
@@ -1301,11 +1288,7 @@ class HomePage extends StatelessWidget {
             ),
             child: const Row(
               children: [
-                Icon(
-                  Icons.auto_awesome,
-                  color: azul,
-                  size: 30,
-                ),
+                Icon(Icons.auto_awesome, color: azul, size: 30),
                 SizedBox(width: 13),
                 Expanded(
                   child: Column(
@@ -1355,11 +1338,9 @@ class _MoviesPageState extends State<MoviesPage> {
     return movies.where((movie) {
       final matchesGenre = selectedGenre == 'Todas' ||
           movie.category == selectedGenre;
-
       final query = searchController.text.toLowerCase().trim();
       final matchesSearch = movie.title.toLowerCase().contains(query) ||
           movie.category.toLowerCase().contains(query);
-
       return matchesGenre && matchesSearch;
     }).toList();
   }
@@ -1404,17 +1385,12 @@ class _MoviesPageState extends State<MoviesPage> {
               style: TextStyle(color: Colors.white60),
             ),
             const SizedBox(height: 20),
-
-            // BUSCADOR
             TextField(
               controller: searchController,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: 'Buscar películas o géneros...',
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: azul,
-                ),
+                prefixIcon: const Icon(Icons.search, color: azul),
                 suffixIcon: IconButton(
                   onPressed: () {
                     searchController.clear();
@@ -1430,7 +1406,6 @@ class _MoviesPageState extends State<MoviesPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 22),
             const Text(
               'EXPLORAR POR GÉNERO',
@@ -1441,15 +1416,12 @@ class _MoviesPageState extends State<MoviesPage> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // FILTROS
             SizedBox(
               height: 40,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: movieGenres.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: 8),
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final genre = movieGenres[index];
                   final active = selectedGenre == genre;
@@ -1474,7 +1446,6 @@ class _MoviesPageState extends State<MoviesPage> {
                 },
               ),
             ),
-
             const SizedBox(height: 22),
             Row(
               children: [
@@ -1489,16 +1460,11 @@ class _MoviesPageState extends State<MoviesPage> {
                 ),
                 Text(
                   '${results.length} títulos',
-                  style: const TextStyle(
-                    color: azul,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: azul, fontSize: 12),
                 ),
               ],
             ),
             const SizedBox(height: 15),
-
-            // RESULTADOS
             if (results.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 55),
@@ -1544,7 +1510,6 @@ class _MoviesPageState extends State<MoviesPage> {
                   return MoviePoster(movie: results[index]);
                 },
               ),
-
             const SizedBox(height: 20),
             const Text(
               'Los títulos e imágenes actuales son demostrativos.',
@@ -1588,9 +1553,7 @@ class MoviePoster extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: azul.withOpacity(0.3),
-                ),
+                border: Border.all(color: azul.withOpacity(0.3)),
                 boxShadow: [
                   BoxShadow(
                     color: azul.withOpacity(0.08),
@@ -1660,10 +1623,7 @@ class MoviePoster extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             movie.category,
-            style: const TextStyle(
-              color: azul,
-              fontSize: 10,
-            ),
+            style: const TextStyle(color: azul, fontSize: 10),
           ),
         ],
       ),
@@ -1688,13 +1648,11 @@ class MovieDetailPage extends StatefulWidget {
 class _MovieDetailPageState extends State<MovieDetailPage> {
   bool saved = false;
 
-  void mostrarAviso() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'La reproducción estará disponible cuando conectemos contenido autorizado.',
-        ),
-        duration: Duration(seconds: 3),
+  void reproducirVideo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlayerScreen(movie: widget.movie),
       ),
     );
   }
@@ -1833,7 +1791,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     width: double.infinity,
                     height: 54,
                     child: ElevatedButton.icon(
-                      onPressed: mostrarAviso,
+                      onPressed: reproducirVideo,
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text(
                         'REPRODUCIR',
@@ -1892,6 +1850,282 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// REPRODUCTOR DE VIDEO
+
+class PlayerScreen extends StatefulWidget {
+  final MovieData movie;
+
+  const PlayerScreen({
+    super.key,
+    required this.movie,
+  });
+
+  @override
+  State<PlayerScreen> createState() => _PlayerScreenState();
+}
+
+class _PlayerScreenState extends State<PlayerScreen> {
+  late final VideoPlayerController controller;
+  bool hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = VideoPlayerController.networkUrl(
+      Uri.parse(
+        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+      ),
+    );
+
+    inicializarReproductor();
+  }
+
+  Future<void> inicializarReproductor() async {
+    try {
+      await controller.initialize();
+
+      if (!mounted) return;
+
+      setState(() {});
+      await controller.play();
+    } catch (_) {
+      if (mounted) {
+        setState(() => hasError = true);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  String formatoTiempo(Duration tiempo) {
+    final minutos = tiempo.inMinutes.remainder(60);
+    final segundos = tiempo.inSeconds.remainder(60);
+    final horas = tiempo.inHours;
+
+    if (horas > 0) {
+      return '$horas:${minutos.toString().padLeft(2, '0')}:${segundos.toString().padLeft(2, '0')}';
+    }
+
+    return '$minutos:${segundos.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: const Text(
+          'NEXORA PLAYER',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+            fontSize: 16,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: azul),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: hasError
+              ? Padding(
+                  padding: const EdgeInsets.all(25),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: morado,
+                        size: 60,
+                      ),
+                      const SizedBox(height: 15),
+                      const Text(
+                        'No se pudo cargar el video.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 17),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Comprueba tu conexión a internet e inténtalo de nuevo.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white60),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() => hasError = false);
+                          inicializarReproductor();
+                        },
+                        child: const Text('INTENTAR DE NUEVO'),
+                      ),
+                    ],
+                  ),
+                )
+              : !controller.value.isInitialized
+                  ? const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: azul),
+                        SizedBox(height: 18),
+                        Text(
+                          'Preparando reproducción...',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.movie.title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'VIDEO DE DEMOSTRACIÓN',
+                            style: TextStyle(
+                              color: azul,
+                              fontSize: 11,
+                              letterSpacing: 2,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 25),
+                          AspectRatio(
+                            aspectRatio: controller.value.aspectRatio,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: VideoPlayer(controller),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          VideoProgressIndicator(
+                            controller,
+                            allowScrubbing: true,
+                            colors: const VideoProgressColors(
+                              playedColor: azul,
+                              bufferedColor: Colors.white38,
+                              backgroundColor: Colors.white12,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ValueListenableBuilder<VideoPlayerValue>(
+                            valueListenable: controller,
+                            builder: (context, value, child) {
+                              return Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    formatoTiempo(value.position),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    formatoTiempo(value.duration),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 15),
+                          ValueListenableBuilder<VideoPlayerValue>(
+                            valueListenable: controller,
+                            builder: (context, value, child) {
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    onPressed: () async {
+                                      final nuevaPosicion =
+                                          value.position -
+                                              const Duration(seconds: 10);
+                                      await controller.seekTo(
+                                        nuevaPosicion < Duration.zero
+                                            ? Duration.zero
+                                            : nuevaPosicion,
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.replay_10_rounded,
+                                      color: Colors.white,
+                                      size: 35,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: azul,
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () {
+                                        if (value.isPlaying) {
+                                          controller.pause();
+                                        } else {
+                                          if (value.isCompleted) {
+                                            controller.seekTo(Duration.zero);
+                                          }
+                                          controller.play();
+                                        }
+                                      },
+                                      icon: Icon(
+                                        value.isPlaying
+                                            ? Icons.pause_rounded
+                                            : Icons.play_arrow_rounded,
+                                        color: fondo,
+                                        size: 38,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  IconButton(
+                                    onPressed: () async {
+                                      final nuevaPosicion =
+                                          value.position +
+                                              const Duration(seconds: 10);
+                                      await controller.seekTo(
+                                        nuevaPosicion > value.duration
+                                            ? value.duration
+                                            : nuevaPosicion,
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.forward_10_rounded,
+                                      color: Colors.white,
+                                      size: 35,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+        ),
       ),
     );
   }
@@ -1960,9 +2194,7 @@ class MediaCard extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
-                  border: Border.all(
-                    color: azul.withOpacity(0.25),
-                  ),
+                  border: Border.all(color: azul.withOpacity(0.25)),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
