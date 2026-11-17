@@ -1389,6 +1389,166 @@ const List<String> movieGenres = [
   'Documental',
 ];
 
+// SERIES DE DEMOSTRACIÓN
+
+class SeriesData {
+  final String title;
+  final String genre;
+  final String synopsis;
+  final String seasons;
+  final String year;
+  final String image;
+
+  const SeriesData({
+    required this.title,
+    required this.genre,
+    required this.synopsis,
+    required this.seasons,
+    required this.year,
+    required this.image,
+  });
+}
+
+const List<SeriesData> nexoraSeries = [
+  SeriesData(
+    title: 'Código desconocido', genre: 'Ciencia ficción', year: '2025',
+    seasons: '1 temporada',
+    synopsis: 'Un grupo de jóvenes descubre una señal escondida en una red digital y comienza a investigar un misterio que conecta varios lugares del mundo.',
+    image: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=900',
+  ),
+  SeriesData(
+    title: 'Rutas salvajes', genre: 'Aventura', year: '2024',
+    seasons: '2 temporadas',
+    synopsis: 'Exploradores recorren territorios sorprendentes y se enfrentan a retos que ponen a prueba su ingenio y trabajo en equipo.',
+    image: 'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=900',
+  ),
+  SeriesData(
+    title: 'Mentes brillantes', genre: 'Drama', year: '2025',
+    seasons: '1 temporada',
+    synopsis: 'Un equipo de investigadores une sus talentos para resolver problemas que parecen no tener explicación.',
+    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=900',
+  ),
+  SeriesData(
+    title: 'Planeta vivo', genre: 'Documental', year: '2023',
+    seasons: '3 temporadas',
+    synopsis: 'Un recorrido por ecosistemas extraordinarios, especies fascinantes y los desafíos de conservar nuestro planeta.',
+    image: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=900',
+  ),
+  SeriesData(
+    title: 'Más allá del tiempo', genre: 'Fantasía', year: '2024',
+    seasons: '2 temporadas',
+    synopsis: 'Una antigua reliquia abre caminos hacia otras épocas y cambia para siempre la vida de quienes la encuentran.',
+    image: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=900',
+  ),
+  SeriesData(
+    title: 'Zona de riesgo', genre: 'Acción', year: '2025',
+    seasons: '1 temporada',
+    synopsis: 'Un equipo especializado debe superar misiones difíciles mientras descubre quién está detrás de una amenaza inesperada.',
+    image: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=900',
+  ),
+];
+
+class SeriesPage extends StatelessWidget {
+  const SeriesPage({super.key});
+
+  void _showDetails(BuildContext context, SeriesData series) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101A30),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(5)))),
+              const SizedBox(height: 18),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(17),
+                child: Image.network(series.image, height: 175, width: double.infinity, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(height: 175, color: panel, child: const Icon(Icons.live_tv_rounded, color: azul, size: 55))),
+              ),
+              const SizedBox(height: 16),
+              Text(series.title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 6),
+              Text('${series.genre}  ·  ${series.year}  ·  ${series.seasons}', style: const TextStyle(color: azul, fontSize: 12, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              Text(series.synopsis, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
+              const SizedBox(height: 17),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(color: azul.withOpacity(0.08), borderRadius: BorderRadius.circular(13), border: Border.all(color: azul.withOpacity(0.2))),
+                child: const Text('Próximamente: episodios y reproducción con contenido autorizado.', style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.4)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(title: const Row(children: [Icon(Icons.live_tv_rounded, color: azul), SizedBox(width: 9), Text('SERIES NEXORA')])),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
+          children: [
+            const Text('HISTORIAS QUE CONTINÚAN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            const Text('Explora nuevas historias y descubre sus detalles.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+            const SizedBox(height: 20),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: nexoraSeries.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 13, mainAxisSpacing: 18, childAspectRatio: 0.62),
+              itemBuilder: (context, index) {
+                final series = nexoraSeries[index];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _showDetails(context, series),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), border: Border.all(color: morado.withOpacity(0.3))),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Stack(fit: StackFit.expand, children: [
+                            Image.network(series.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: panel, child: const Icon(Icons.live_tv_rounded, color: morado, size: 45))),
+                            const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Color(0x99050817)]))),
+                            const Positioned(right: 8, top: 8, child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 27)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(series.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                    const SizedBox(height: 3),
+                    Text('${series.genre} · ${series.year}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                    Text(series.seasons, style: const TextStyle(color: morado, fontSize: 10, fontWeight: FontWeight.w700)),
+                  ]),
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+            const Text('Catálogo demostrativo. La reproducción se incorporará cuando contemos con contenido autorizado.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // INICIO ESTILO PLATAFORMA DE STREAMING
 
 class HomePage extends StatelessWidget {
@@ -2450,7 +2610,7 @@ class ExplorePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final options = [
       _ExploreOption('Películas', 'Historias para cada momento', Icons.movie_creation_rounded, azul, true),
-      _ExploreOption('Series', 'Muy pronto: nuevas historias', Icons.live_tv_rounded, morado, false),
+      _ExploreOption('Series', 'Descubre historias y temporadas', Icons.live_tv_rounded, morado, true, series: true),
       _ExploreOption('Deportes', 'Muy pronto: vive la emoción', Icons.sports_soccer_rounded, const Color(0xFFFFB454), false),
       _ExploreOption('Documentales', 'Muy pronto: descubre el mundo', Icons.public_rounded, const Color(0xFF65D6A5), false),
       _ExploreOption('Música', 'Muy pronto: siente el ritmo', Icons.headphones_rounded, const Color(0xFFFF76B7), false),
@@ -2549,8 +2709,9 @@ class _ExploreOption {
   final IconData icon;
   final Color color;
   final bool available;
+  final bool series;
 
-  const _ExploreOption(this.title, this.subtitle, this.icon, this.color, this.available);
+  const _ExploreOption(this.title, this.subtitle, this.icon, this.color, this.available, {this.series = false});
 }
 
 class _ExploreTile extends StatelessWidget {
@@ -2563,7 +2724,9 @@ class _ExploreTile extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(21),
       onTap: () {
-        if (option.available) {
+        if (option.available && option.series) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SeriesPage()));
+        } else if (option.available) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const MoviesPage()));
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${option.title}: próximamente en NEXORA.')));
