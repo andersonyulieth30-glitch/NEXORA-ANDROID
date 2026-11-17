@@ -2406,79 +2406,93 @@ class ExplorePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = [
-      _ExploreOption('Películas', 'Descubre el catálogo', Icons.movie_rounded, azul, true),
-      _ExploreOption('Series', 'Nuevas historias', Icons.live_tv_rounded, morado, false),
-      _ExploreOption('Deportes', 'Acción y emoción', Icons.sports_soccer_rounded, const Color(0xFFFFB454), false),
-      _ExploreOption('Documentales', 'Conoce el mundo', Icons.public_rounded, const Color(0xFF65D6A5), false),
-      _ExploreOption('Música', 'Ritmo para cada momento', Icons.headphones_rounded, const Color(0xFFFF76B7), false),
-      _ExploreOption('Educación', 'Aprende algo nuevo', Icons.school_rounded, const Color(0xFF9EABFF), false),
+      _ExploreOption('Películas', 'Historias para cada momento', Icons.movie_creation_rounded, azul, true),
+      _ExploreOption('Series', 'Muy pronto: nuevas historias', Icons.live_tv_rounded, morado, false),
+      _ExploreOption('Deportes', 'Muy pronto: vive la emoción', Icons.sports_soccer_rounded, const Color(0xFFFFB454), false),
+      _ExploreOption('Documentales', 'Muy pronto: descubre el mundo', Icons.public_rounded, const Color(0xFF65D6A5), false),
+      _ExploreOption('Música', 'Muy pronto: siente el ritmo', Icons.headphones_rounded, const Color(0xFFFF76B7), false),
+      _ExploreOption('Educación', 'Muy pronto: aprende más', Icons.school_rounded, const Color(0xFF9EABFF), false),
     ];
 
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
         children: [
-          const Text(
-            'EXPLORA',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 1.4),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Un universo de experiencias te espera.',
-            style: TextStyle(color: Colors.white60, fontSize: 13),
-          ),
-          const SizedBox(height: 22),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF17365A), Color(0xFF251A49), Color(0xFF111A30)],
+          Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('DESCUBRE NEXORA', style: TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                    SizedBox(height: 7),
+                    Text('Explorar', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: -0.7)),
+                  ],
+                ),
               ),
-              border: Border.all(color: azul.withOpacity(0.30)),
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(color: azul.withOpacity(0.10), borderRadius: BorderRadius.circular(15), border: Border.all(color: azul.withOpacity(0.25))),
+                child: const Icon(Icons.travel_explore_rounded, color: azul, size: 24),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text('Encuentra tu próximo contenido favorito.', style: TextStyle(color: Colors.white60, fontSize: 13)),
+          const SizedBox(height: 23),
+          Container(
+            height: 178,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(25),
+              gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF17446A), Color(0xFF30205D), Color(0xFF111A30)]),
+              border: Border.all(color: azul.withOpacity(0.32)),
+              boxShadow: [BoxShadow(color: azul.withOpacity(0.10), blurRadius: 25, offset: const Offset(0, 9))],
             ),
-            child: const Row(
+            child: Stack(
               children: [
-                Icon(Icons.travel_explore_rounded, color: azul, size: 38),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('TU SIGUIENTE DESCUBRIMIENTO', style: TextStyle(fontSize: 11, color: azul, fontWeight: FontWeight.w900, letterSpacing: 0.8)),
-                      SizedBox(height: 6),
-                      Text('Encuentra algo que te sorprenda.', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
+                const Positioned(right: -8, bottom: -18, child: Icon(Icons.auto_awesome, size: 125, color: Color(0x2239D8FF))),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: azul.withOpacity(0.15), borderRadius: BorderRadius.circular(20)), child: const Text('TU UNIVERSO DE ENTRETENIMIENTO', style: TextStyle(color: azul, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.7))),
+                    const SizedBox(height: 12),
+                    const Text('Hay algo nuevo\npor descubrir.', style: TextStyle(fontSize: 23, height: 1.12, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 9),
+                    const Text('Explora categorías y encuentra lo que te gusta.', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 25),
-          const Text('CATEGORÍAS', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+          const SizedBox(height: 27),
+          Row(
+            children: [
+              const Expanded(child: Text('Explora por categoría', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900))),
+              Text('${options.length} categorías', style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w600)),
+            ],
+          ),
           const SizedBox(height: 13),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: options.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.32,
-            ),
-            itemBuilder: (context, index) {
-              final option = options[index];
-              return _ExploreTile(option: option);
-            },
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.12),
+            itemBuilder: (context, index) => _ExploreTile(option: options[index]),
           ),
-          const SizedBox(height: 18),
-          const Text(
-            'NEXORA reúne tus experiencias favoritas en un solo lugar.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 11, height: 1.5),
+          const SizedBox(height: 22),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+            decoration: BoxDecoration(color: const Color(0xFF121D32), borderRadius: BorderRadius.circular(17), border: Border.all(color: Colors.white.withOpacity(0.06))),
+            child: const Row(
+              children: [
+                Icon(Icons.rocket_launch_rounded, color: azul, size: 21),
+                SizedBox(width: 11),
+                Expanded(child: Text('NEXORA está creciendo. Pronto llegarán más experiencias.', style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.4))),
+              ],
+            ),
           ),
         ],
       ),
@@ -2504,41 +2518,43 @@ class _ExploreTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(19),
+      borderRadius: BorderRadius.circular(21),
       onTap: () {
         if (option.available) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const MoviesPage()));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${option.title}: próximamente en NEXORA.')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${option.title}: próximamente en NEXORA.')));
         }
       },
       child: Ink(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(19),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF182641), Color(0xFF10182B)],
-          ),
-          border: Border.all(color: option.color.withOpacity(0.28)),
+          borderRadius: BorderRadius.circular(21),
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [option.color.withOpacity(0.15), const Color(0xFF17223A), const Color(0xFF10182B)]),
+          border: Border.all(color: option.color.withOpacity(0.30)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(color: option.color.withOpacity(0.13), borderRadius: BorderRadius.circular(13)),
-              child: Icon(option.icon, color: option.color, size: 23),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(width: 43, height: 43, decoration: BoxDecoration(color: option.color.withOpacity(0.16), borderRadius: BorderRadius.circular(14)), child: Icon(option.icon, color: option.color, size: 23)),
+                if (option.available)
+                  const Icon(Icons.arrow_outward_rounded, color: azul, size: 18)
+                else
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4), decoration: BoxDecoration(color: Colors.white.withOpacity(0.07), borderRadius: BorderRadius.circular(10)), child: const Text('PRONTO', style: TextStyle(color: Colors.white54, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5))),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(option.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 4),
-            Text(option.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10, height: 1.25)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(option.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                Text(option.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10, height: 1.25)),
+              ],
+            ),
           ],
         ),
       ),
