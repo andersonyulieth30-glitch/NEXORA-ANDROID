@@ -2842,6 +2842,73 @@ class ProfilePage extends StatelessWidget {
     if (confirmar == true) await FirebaseAuth.instance.signOut();
   }
 
+  void mostrarInfo(BuildContext context, String titulo, String mensaje, IconData icono) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: panel,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Row(
+          children: [Icon(icono, color: azul), const SizedBox(width: 10), Expanded(child: Text(titulo))],
+        ),
+        content: Text(mensaje, style: const TextStyle(color: Colors.white70, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('ENTENDIDO', style: TextStyle(color: azul, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget opcionPerfil({
+    required BuildContext context,
+    required IconData icono,
+    required String titulo,
+    required String subtitulo,
+    required VoidCallback accion,
+  }) {
+    return InkWell(
+      onTap: accion,
+      borderRadius: BorderRadius.circular(17),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+        decoration: BoxDecoration(
+          color: panel,
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: Colors.white.withOpacity(0.07)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: azul.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icono, color: azul, size: 21),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Text(subtitulo, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -2854,60 +2921,47 @@ class ProfilePage extends StatelessWidget {
         children: [
           const Text('MI PERFIL', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
           const SizedBox(height: 7),
-          const Text('Tu espacio personal en NEXORA.', style: TextStyle(color: Colors.white60, fontSize: 13)),
-          const SizedBox(height: 25),
+          const Text('Administra tu cuenta y disfruta NEXORA.', style: TextStyle(color: Colors.white60, fontSize: 13)),
+          const SizedBox(height: 24),
           Container(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(23),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(25),
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [Color(0xFF17385D), Color(0xFF271B4B), Color(0xFF111A30)],
               ),
-              border: Border.all(color: azul.withOpacity(0.35)),
-              boxShadow: [BoxShadow(color: azul.withOpacity(0.10), blurRadius: 25, spreadRadius: 1)],
+              border: Border.all(color: azul.withOpacity(0.38)),
+              boxShadow: [BoxShadow(color: azul.withOpacity(0.12), blurRadius: 26, spreadRadius: 1)],
             ),
             child: Column(
               children: [
                 Container(
-                  width: 82,
-                  height: 82,
+                  width: 88,
+                  height: 88,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(colors: [azul, morado]),
-                    boxShadow: [BoxShadow(color: azul.withOpacity(0.28), blurRadius: 22)],
+                    border: Border.all(color: Colors.white.withOpacity(0.65), width: 2),
+                    boxShadow: [BoxShadow(color: azul.withOpacity(0.30), blurRadius: 24)],
                   ),
-                  child: Center(child: Text(initial, style: const TextStyle(color: fondo, fontSize: 34, fontWeight: FontWeight.w900))),
+                  child: Center(child: Text(initial, style: const TextStyle(color: fondo, fontSize: 36, fontWeight: FontWeight.w900))),
                 ),
-                const SizedBox(height: 16),
-                const Text('MI CUENTA NEXORA', style: TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-                const SizedBox(height: 8),
-                Text(email, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 7),
+                const SizedBox(height: 17),
+                const Text('BIENVENIDO A NEXORA', style: TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.6)),
+                const SizedBox(height: 9),
+                Text(email, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
-                  child: const Text('Cuenta protegida con Firebase', style: TextStyle(color: Colors.white70, fontSize: 10)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(17),
-            decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withOpacity(0.07))),
-            child: const Row(
-              children: [
-                Icon(Icons.verified_user_outlined, color: azul, size: 25),
-                SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.09), borderRadius: BorderRadius.circular(20)),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Tu cuenta está activa', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                      SizedBox(height: 4),
-                      Text('Tus favoritos se sincronizan con tu biblioteca.', style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.35)),
+                      Icon(Icons.verified_rounded, color: azul, size: 14),
+                      SizedBox(width: 6),
+                      Text('CUENTA ACTIVA', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.7)),
                     ],
                   ),
                 ),
@@ -2915,8 +2969,35 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 25),
+          const Text('TU CUENTA', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.4)),
+          const SizedBox(height: 12),
+          opcionPerfil(
+            context: context,
+            icono: Icons.shield_outlined,
+            titulo: 'Seguridad y acceso',
+            subtitulo: 'Tu sesión está protegida por Firebase',
+            accion: () => mostrarInfo(context, 'Seguridad y acceso', 'NEXORA utiliza Firebase Authentication para gestionar el inicio de sesión. Recuerda mantener segura la contraseña de tu cuenta.', Icons.shield_outlined),
+          ),
+          opcionPerfil(
+            context: context,
+            icono: Icons.favorite_outline_rounded,
+            titulo: 'Tus favoritos',
+            subtitulo: 'Guarda y consulta tu contenido preferido',
+            accion: () => mostrarInfo(context, 'Tus favoritos', 'Los contenidos que marques como favoritos se guardan en tu Biblioteca vinculada a tu cuenta.', Icons.favorite_outline_rounded),
+          ),
+          const SizedBox(height: 13),
+          const Text('ACERCA DE NEXORA', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.4)),
+          const SizedBox(height: 12),
+          opcionPerfil(
+            context: context,
+            icono: Icons.info_outline_rounded,
+            titulo: 'Sobre la aplicación',
+            subtitulo: 'Conoce un poco más de NEXORA',
+            accion: () => mostrarInfo(context, 'NEXORA', 'Tu mundo, tu entretenimiento. Estamos construyendo un espacio para descubrir películas, series, deportes y mucho más. Gracias por acompañarnos.', Icons.auto_awesome_rounded),
+          ),
+          const SizedBox(height: 15),
           SizedBox(
-            height: 52,
+            height: 53,
             child: ElevatedButton.icon(
               onPressed: () => cerrarSesion(context),
               icon: const Icon(Icons.logout_rounded, size: 19),
@@ -2929,7 +3010,7 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 23),
           const Center(child: Text('NEXORA  •  TU MUNDO, TU ENTRETENIMIENTO', style: TextStyle(color: Colors.white30, fontSize: 9, letterSpacing: 0.8))),
         ],
       ),
