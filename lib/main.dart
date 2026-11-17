@@ -2917,17 +2917,3 @@ class StarPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-this.icon);
-}
-
-// FONDO ESTRELLADO
-
-class StarPainter extends CustomPainter {
-  const StarPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final random = math.Random(12);
-    final paint = Paint();
-
-    for (int i = 0; i < 150; i
