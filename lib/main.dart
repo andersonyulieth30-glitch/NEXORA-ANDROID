@@ -25,11 +25,79 @@ class NexoraApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'NEXORA',
-      theme: ThemeData.dark().copyWith(
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
         scaffoldBackgroundColor: fondo,
         colorScheme: const ColorScheme.dark(
           primary: azul,
           secondary: morado,
+          surface: panel,
+        ),
+        fontFamily: 'Roboto',
+        appBarTheme: const AppBarTheme(
+          backgroundColor: fondo,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: false,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: panel,
+          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.07)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: azul, width: 1.4),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF0B1224),
+          indicatorColor: azul.withOpacity(0.16),
+          height: 70,
+          labelTextStyle: MaterialStateProperty.resolveWith((states) {
+            final selected = states.contains(MaterialState.selected);
+            return TextStyle(
+              color: selected ? azul : Colors.white54,
+              fontSize: 11,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+            );
+          }),
+          iconTheme: MaterialStateProperty.resolveWith((states) {
+            return IconThemeData(
+              color: states.contains(MaterialState.selected)
+                  ? azul
+                  : Colors.white54,
+              size: 23,
+            );
+          }),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: const Color(0xFF1B2945),
+          contentTextStyle: const TextStyle(color: Colors.white),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        chipTheme: ThemeData.dark().chipTheme.copyWith(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          side: BorderSide(color: Colors.white.withOpacity(0.08)),
         ),
       ),
       home: const AuthGate(),
@@ -1098,6 +1166,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final pages = const [
     HomePage(),
+    MoviesPage(),
     ExplorePage(),
     LibraryPage(),
     ProfilePage(),
@@ -1107,10 +1176,17 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: fondo,
-      body: IndexedStack(index: selected, children: pages),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: -130,
+            right: -110,
+            child: _AmbientGlow(color: Color(0x3320C8FF), size: 260),
+          ),
+          IndexedStack(index: selected, children: pages),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
-        backgroundColor: const Color(0xFF11182B),
-        indicatorColor: azul.withOpacity(0.18),
         selectedIndex: selected,
         onDestinationSelected: (index) {
           setState(() => selected = index);
@@ -1118,25 +1194,52 @@ class _MainScreenState extends State<MainScreen> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: azul),
+            selectedIcon: Icon(Icons.home_rounded),
             label: 'Inicio',
           ),
           NavigationDestination(
+            icon: Icon(Icons.movie_outlined),
+            selectedIcon: Icon(Icons.movie_rounded),
+            label: 'Películas',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore, color: azul),
+            selectedIcon: Icon(Icons.explore_rounded),
             label: 'Explorar',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bookmark_border),
-            selectedIcon: Icon(Icons.bookmark, color: azul),
+            icon: Icon(Icons.bookmark_border_rounded),
+            selectedIcon: Icon(Icons.bookmark_rounded),
             label: 'Biblioteca',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: azul),
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
             label: 'Perfil',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AmbientGlow extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _AmbientGlow({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.01),
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: color, blurRadius: 100, spreadRadius: 35)],
+        ),
       ),
     );
   }
@@ -1265,7 +1368,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 15, 18, 25),
+        padding: const EdgeInsets.fromLTRB(18, 17, 18, 30),
         children: [
           Row(
             children: [
@@ -1274,9 +1377,9 @@ class HomePage extends StatelessWidget {
               const Text(
                 'NEXORA',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 23,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
+                  letterSpacing: 2.6,
                   shadows: [Shadow(color: azul, blurRadius: 12)],
                 ),
               ),
@@ -1307,7 +1410,7 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 25),
           const Text(
             'TU MUNDO.',
-            style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 31, fontWeight: FontWeight.w900, letterSpacing: 0.4),
           ),
           const Text(
             'TU ENTRETENIMIENTO.',
@@ -1326,7 +1429,17 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 25),
           ClipRRect(
             borderRadius: BorderRadius.circular(22),
-            child: Stack(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: azul.withOpacity(0.32)),
+                boxShadow: [
+                  BoxShadow(color: azul.withOpacity(0.10), blurRadius: 24, spreadRadius: 1),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Stack(
               children: [
                 SizedBox(
                   height: 220,
@@ -1441,6 +1554,8 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ],
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 28),
@@ -2361,21 +2476,27 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1,
+        Container(
+          width: 3,
+          height: 37,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [azul, morado]),
+            borderRadius: BorderRadius.circular(5),
           ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          subtitle,
-          style: const TextStyle(color: Color(0xFF8E9BB7), fontSize: 11),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 1)),
+              const SizedBox(height: 5),
+              Text(subtitle, style: const TextStyle(color: Color(0xFF8E9BB7), fontSize: 11)),
+            ],
+          ),
         ),
       ],
     );
@@ -2471,46 +2592,140 @@ class ExplorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final options = [
+      _ExploreOption('Películas', 'Descubre el catálogo', Icons.movie_rounded, azul, true),
+      _ExploreOption('Series', 'Nuevas historias', Icons.live_tv_rounded, morado, false),
+      _ExploreOption('Deportes', 'Acción y emoción', Icons.sports_soccer_rounded, const Color(0xFFFFB454), false),
+      _ExploreOption('Documentales', 'Conoce el mundo', Icons.public_rounded, const Color(0xFF65D6A5), false),
+      _ExploreOption('Música', 'Ritmo para cada momento', Icons.headphones_rounded, const Color(0xFFFF76B7), false),
+      _ExploreOption('Educación', 'Aprende algo nuevo', Icons.school_rounded, const Color(0xFF9EABFF), false),
+    ];
+
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
+        children: [
+          const Text(
+            'EXPLORA',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 1.4),
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Un universo de experiencias te espera.',
+            style: TextStyle(color: Colors.white60, fontSize: 13),
+          ),
+          const SizedBox(height: 22),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF17365A), Color(0xFF251A49), Color(0xFF111A30)],
+              ),
+              border: Border.all(color: azul.withOpacity(0.30)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.travel_explore_rounded, color: azul, size: 38),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('TU SIGUIENTE DESCUBRIMIENTO', style: TextStyle(fontSize: 11, color: azul, fontWeight: FontWeight.w900, letterSpacing: 0.8)),
+                      SizedBox(height: 6),
+                      Text('Encuentra algo que te sorprenda.', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+          const Text('CATEGORÍAS', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+          const SizedBox(height: 13),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: options.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.32,
+            ),
+            itemBuilder: (context, index) {
+              final option = options[index];
+              return _ExploreTile(option: option);
+            },
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'NEXORA reúne tus experiencias favoritas en un solo lugar.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38, fontSize: 11, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExploreOption {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final bool available;
+
+  const _ExploreOption(this.title, this.subtitle, this.icon, this.color, this.available);
+}
+
+class _ExploreTile extends StatelessWidget {
+  final _ExploreOption option;
+
+  const _ExploreTile({required this.option});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(19),
+      onTap: () {
+        if (option.available) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const MoviesPage()));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${option.title}: próximamente en NEXORA.')),
+          );
+        }
+      },
+      child: Ink(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(19),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF182641), Color(0xFF10182B)],
+          ),
+          border: Border.all(color: option.color.withOpacity(0.28)),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'EXPLORAR',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(color: option.color.withOpacity(0.13), borderRadius: BorderRadius.circular(13)),
+              child: Icon(option.icon, color: option.color, size: 23),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Descubre todo lo que NEXORA tiene para ti.',
-              style: TextStyle(color: Colors.white60),
-            ),
-            const SizedBox(height: 25),
-            ListTile(
-              leading: const Icon(Icons.movie, color: azul),
-              title: const Text('Películas'),
-              subtitle: const Text('Explora el catálogo'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MoviesPage()),
-                );
-              },
-            ),
-            const Divider(color: Colors.white12),
-            const ListTile(
-              leading: Icon(Icons.live_tv, color: morado),
-              title: Text('Series'),
-              subtitle: Text('Próximamente'),
-            ),
-            const Divider(color: Colors.white12),
-            const ListTile(
-              leading: Icon(Icons.sports_soccer, color: azul),
-              title: Text('Deportes'),
-              subtitle: Text('Próximamente'),
-            ),
+            const SizedBox(height: 12),
+            Text(option.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 4),
+            Text(option.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10, height: 1.25)),
           ],
         ),
       ),
@@ -2601,7 +2816,7 @@ class LibraryPage extends StatelessWidget {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 18),
+                  padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -2760,43 +2975,118 @@ class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   Future<void> cerrarSesion(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: panel,
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Seguro que deseas salir de tu cuenta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCELAR', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(backgroundColor: morado, foregroundColor: Colors.white),
+            child: const Text('SALIR'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar == true) await FirebaseAuth.instance.signOut();
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email ?? 'Usuario NEXORA';
+    final initial = email.isNotEmpty ? email[0].toUpperCase() : 'N';
+
     return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(25),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.account_circle, color: azul, size: 65),
-              const SizedBox(height: 20),
-              const Text(
-                'Mi perfil',
-                style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 25, 20, 30),
+        children: [
+          const Text('MI PERFIL', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+          const SizedBox(height: 7),
+          const Text('Tu espacio personal en NEXORA.', style: TextStyle(color: Colors.white60, fontSize: 13)),
+          const SizedBox(height: 25),
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF17385D), Color(0xFF271B4B), Color(0xFF111A30)],
               ),
-              const SizedBox(height: 12),
-              Text(
-                FirebaseAuth.instance.currentUser?.email ?? '',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton.icon(
-                onPressed: () => cerrarSesion(context),
-                icon: const Icon(Icons.logout),
-                label: const Text('CERRAR SESIÓN'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: morado,
-                  foregroundColor: Colors.white,
+              border: Border.all(color: azul.withOpacity(0.35)),
+              boxShadow: [BoxShadow(color: azul.withOpacity(0.10), blurRadius: 25, spreadRadius: 1)],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(colors: [azul, morado]),
+                    boxShadow: [BoxShadow(color: azul.withOpacity(0.28), blurRadius: 22)],
+                  ),
+                  child: Center(child: Text(initial, style: const TextStyle(color: fondo, fontSize: 34, fontWeight: FontWeight.w900))),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text('MI CUENTA NEXORA', style: TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                const SizedBox(height: 8),
+                Text(email, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 7),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
+                  child: const Text('Cuenta protegida con Firebase', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(17),
+            decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withOpacity(0.07))),
+            child: const Row(
+              children: [
+                Icon(Icons.verified_user_outlined, color: azul, size: 25),
+                SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Tu cuenta está activa', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                      SizedBox(height: 4),
+                      Text('Tus favoritos se sincronizan con tu biblioteca.', style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.35)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+          SizedBox(
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: () => cerrarSesion(context),
+              icon: const Icon(Icons.logout_rounded, size: 19),
+              label: const Text('CERRAR SESIÓN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.8)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF291A43),
+                foregroundColor: Colors.white,
+                side: BorderSide(color: morado.withOpacity(0.55)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          const Center(child: Text('NEXORA  •  TU MUNDO, TU ENTRETENIMIENTO', style: TextStyle(color: Colors.white30, fontSize: 9, letterSpacing: 0.8))),
+        ],
       ),
     );
   }
@@ -2917,3 +3207,13 @@ class StarPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+this.icon);
+}
+
+// FONDO ESTRELLADO
+
+class StarPainter extends CustomPainter {
+  const StarPainter();
+
+  @override
+  void paint(Canvas canvas, Siz
