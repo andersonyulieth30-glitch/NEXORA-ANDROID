@@ -2578,21 +2578,53 @@ class LibraryPage extends StatelessWidget {
           const SnackBar(content: Text('Eliminada de tu biblioteca.')),
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo eliminar este favorito.'),
-          ),
+          const SnackBar(content: Text('No se pudo eliminar este favorito.')),
         );
       }
     }
   }
 
+  Widget _emptyLibrary() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 104,
+              height: 104,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: azul.withOpacity(0.10),
+                border: Border.all(color: azul.withOpacity(0.35)),
+              ),
+              child: const Icon(Icons.bookmark_add_outlined, color: azul, size: 48),
+            ),
+            const SizedBox(height: 22),
+            const Text(
+              'TU COLECCIÓN TE ESPERA',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: 1),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Guarda tus películas favoritas y las encontrarás aquí cuando quieras volver a verlas.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white60, height: 1.5, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) {
       return const SimplePage(
         icon: Icons.bookmark,
@@ -2613,11 +2645,8 @@ class LibraryPage extends StatelessWidget {
         stream: favoritesStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: azul),
-            );
+            return const Center(child: CircularProgressIndicator(color: azul));
           }
-
           if (snapshot.hasError) {
             return const Center(
               child: Padding(
@@ -2632,164 +2661,151 @@ class LibraryPage extends StatelessWidget {
           }
 
           final documents = snapshot.data?.docs ?? [];
-          if (documents.isEmpty) {
-            return const SimplePage(
-              icon: Icons.bookmark_border,
-              title: 'MI BIBLIOTECA',
-              message:
-                  'Todavía no tienes favoritos. Guarda una película para verla aquí.',
-            );
-          }
-
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'MI BIBLIOTECA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      gradient: LinearGradient(
+                        colors: [azul.withOpacity(0.22), morado.withOpacity(0.16), panel],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(color: azul.withOpacity(0.24)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: azul.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.bookmarks_rounded, color: azul, size: 29),
                         ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        '${documents.length} elemento${documents.length == 1 ? '' : 's'} guardado${documents.length == 1 ? '' : 's'}',
-                        style: const TextStyle(color: Colors.white60),
-                      ),
-                    ],
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'MI BIBLIOTECA',
+                                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                '${documents.length} ${documents.length == 1 ? 'título guardado' : 'títulos guardados'}',
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final document = documents[index];
-                      final data = document.data();
-                      final movie = MovieData(
-                        title: data['title'] as String? ?? document.id,
-                        category: data['category'] as String? ?? '',
-                        description: data['description'] as String? ?? '',
-                        duration: data['duration'] as String? ?? '',
-                        image: data['image'] as String? ?? '',
-                      );
+              if (documents.isEmpty)
+                SliverFillRemaining(hasScrollBody: false, child: _emptyLibrary())
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final document = documents[index];
+                        final data = document.data();
+                        final movie = MovieData(
+                          title: data['title'] as String? ?? document.id,
+                          category: data['category'] as String? ?? '',
+                          description: data['description'] as String? ?? '',
+                          duration: data['duration'] as String? ?? '',
+                          image: data['image'] as String? ?? '',
+                        );
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 13),
-                        decoration: BoxDecoration(
-                          color: panel,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: azul.withOpacity(0.18),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 13),
+                          decoration: BoxDecoration(
+                            color: panel,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: azul.withOpacity(0.16)),
                           ),
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            Navigator.push(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () => Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => MovieDetailPage(movie: movie),
-                              ),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(11),
-                                  child: SizedBox(
-                                    width: 88,
-                                    height: 112,
-                                    child: movie.image.isEmpty
-                                        ? Container(
-                                            color: fondo,
-                                            child: const Icon(
-                                              Icons.movie,
-                                              color: azul,
-                                              size: 35,
-                                            ),
-                                          )
-                                        : Image.network(
-                                            movie.image,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) {
-                                              return Container(
+                              MaterialPageRoute(builder: (_) => MovieDetailPage(movie: movie)),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(13),
+                                    child: SizedBox(
+                                      width: 88,
+                                      height: 116,
+                                      child: movie.image.isEmpty
+                                          ? Container(color: fondo, child: const Icon(Icons.movie_rounded, color: azul, size: 35))
+                                          : Image.network(
+                                              movie.image,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) => Container(
                                                 color: fondo,
-                                                child: const Icon(
-                                                  Icons.movie,
-                                                  color: azul,
-                                                  size: 35,
-                                                ),
-                                              );
-                                            },
+                                                child: const Icon(Icons.movie_rounded, color: azul, size: 35),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          movie.title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                                        ),
+                                        const SizedBox(height: 9),
+                                        if (movie.category.isNotEmpty)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: azul.withOpacity(0.12),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(movie.category, style: const TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w700)),
                                           ),
-                                  ),
-                                ),
-                                const SizedBox(width: 13),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        movie.title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          movie.duration.isEmpty ? 'Disponible en tu colección' : movie.duration,
+                                          style: const TextStyle(color: Colors.white54, fontSize: 11),
                                         ),
-                                      ),
-                                      const SizedBox(height: 7),
-                                      Text(
-                                        movie.category,
-                                        style: const TextStyle(
-                                          color: azul,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 7),
-                                      Text(
-                                        movie.duration,
-                                        style: const TextStyle(
-                                          color: Colors.white60,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                IconButton(
-                                  tooltip: 'Eliminar de favoritos',
-                                  onPressed: () =>
-                                      _deleteFavorite(context, document.reference),
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.white70,
+                                  IconButton(
+                                    tooltip: 'Eliminar de favoritos',
+                                    onPressed: () => _deleteFavorite(context, document.reference),
+                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.white60),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    childCount: documents.length,
+                        );
+                      },
+                      childCount: documents.length,
+                    ),
                   ),
                 ),
-              ),
             ],
           );
         },
