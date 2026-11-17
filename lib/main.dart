@@ -1346,7 +1346,7 @@ const List<String> movieGenres = [
   'Documental',
 ];
 
-// INICIO DESPUÉS DE AUTENTICARSE
+// INICIO ESTILO PLATAFORMA DE STREAMING
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -1362,321 +1362,124 @@ class HomePage extends StatelessWidget {
     CategoryData('Educación', Icons.school_rounded),
   ];
 
+  void openMovies(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MoviesPage()));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final featured = movies[0];
+    final trending = movies.take(5).toList();
+    final adventures = movies.where((m) => m.category == 'Aventura').toList();
+    final sciFi = movies.where((m) => m.category == 'Ciencia ficción').toList();
+
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 17, 18, 30),
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
         children: [
           Row(
             children: [
-              const NexoraLogo(size: 43),
+              const NexoraLogo(size: 39),
               const SizedBox(width: 9),
-              const Text(
-                'NEXORA',
-                style: TextStyle(
-                  fontSize: 23,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.6,
-                  shadows: [Shadow(color: azul, blurRadius: 12)],
-                ),
-              ),
+              const Text('NEXORA', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2.4, shadows: [Shadow(color: azul, blurRadius: 12)])),
               const Spacer(),
               IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: azul,
-                  size: 27,
-                ),
+                tooltip: 'Buscar contenido',
+                onPressed: () => openMovies(context),
+                icon: const Icon(Icons.search_rounded, color: Colors.white, size: 27),
               ),
               IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfilePage()),
-                  );
-                },
-                icon: const Icon(
-                  Icons.account_circle_outlined,
-                  color: Colors.white70,
-                  size: 27,
-                ),
+                tooltip: 'Mi perfil',
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+                icon: const Icon(Icons.account_circle_rounded, color: azul, size: 28),
               ),
             ],
           ),
-          const SizedBox(height: 25),
-          const Text(
-            'TU MUNDO.',
-            style: TextStyle(fontSize: 31, fontWeight: FontWeight.w900, letterSpacing: 0.4),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              const Text('HOLA, BIENVENIDO', style: TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: const Color(0xFF14243F), borderRadius: BorderRadius.circular(20), border: Border.all(color: azul.withOpacity(0.25))),
+                child: const Row(children: [Icon(Icons.circle, color: Color(0xFF39E6A5), size: 7), SizedBox(width: 6), Text('TU UNIVERSO', style: TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1))]),
+              ),
+            ],
           ),
-          const Text(
-            'TU ENTRETENIMIENTO.',
-            style: TextStyle(
-              fontSize: 19,
-              color: azul,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Descubre un universo hecho para ti.',
-            style: TextStyle(color: Color(0xFF9BAAC8), fontSize: 13),
-          ),
-          const SizedBox(height: 25),
+          const SizedBox(height: 9),
+          const Text('¿QUÉ VAMOS A VER HOY?', style: TextStyle(fontSize: 25, height: 1.08, fontWeight: FontWeight.w900, letterSpacing: 0.2)),
+          const SizedBox(height: 7),
+          const Text('Encuentra tu próxima historia favorita.', style: TextStyle(color: Color(0xFF9BAAC8), fontSize: 12)),
+          const SizedBox(height: 20),
           ClipRRect(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(23),
             child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: azul.withOpacity(0.32)),
-                boxShadow: [
-                  BoxShadow(color: azul.withOpacity(0.10), blurRadius: 24, spreadRadius: 1),
+              height: 285,
+              decoration: BoxDecoration(border: Border.all(color: azul.withOpacity(0.38)), borderRadius: BorderRadius.circular(23), boxShadow: [BoxShadow(color: azul.withOpacity(0.12), blurRadius: 24)]),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(featured.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF183C70), Color(0xFF321B59), fondo])), child: Center(child: Icon(Icons.movie_filter_rounded, color: azul, size: 76)))),
+                  const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x11000000), Color(0xDD050817), Color(0xFF050817)]))),
+                  Positioned(left: 17, right: 17, bottom: 17, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: azul.withOpacity(0.18), borderRadius: BorderRadius.circular(20), border: Border.all(color: azul.withOpacity(0.8))), child: const Text('NEXORA  ·  DESTACADO', style: TextStyle(color: azul, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2))),
+                    const SizedBox(height: 10),
+                    Text(featured.title.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 25, height: 1.05, fontWeight: FontWeight.w900, shadows: [Shadow(color: Colors.black, blurRadius: 12)])),
+                    const SizedBox(height: 6),
+                    Text(featured.category + '  ·  ' + featured.duration, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 13),
+                    Row(children: [
+                      ElevatedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MovieDetailPage(movie: featured))), icon: const Icon(Icons.play_arrow_rounded, size: 20), label: const Text('VER AHORA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.7)), style: ElevatedButton.styleFrom(backgroundColor: azul, foregroundColor: fondo, padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)))),
+                      const SizedBox(width: 9),
+                      OutlinedButton.icon(onPressed: () => openMovies(context), icon: const Icon(Icons.explore_rounded, size: 17), label: const Text('EXPLORAR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)), style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.45)), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)))),
+                    ]),
+                  ])),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
-                child: Stack(
-              children: [
-                SizedBox(
-                  height: 220,
-                  width: double.infinity,
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) {
-                      return Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(0xFF172D59),
-                              Color(0xFF311B55),
-                              Color(0xFF080D1B),
-                            ],
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.auto_awesome,
-                            color: azul,
-                            size: 65,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Container(
-                  height: 220,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        fondo.withOpacity(0.95),
-                        fondo.withOpacity(0.55),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 18,
-                  right: 15,
-                  bottom: 18,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: azul.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: azul),
-                        ),
-                        child: const Text(
-                          'NEXORA DESTACADOS',
-                          style: TextStyle(
-                            color: azul,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'EXPLORA LO EXTRAORDINARIO',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      const Text(
-                        'Tu próxima historia comienza aquí.',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 37,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const MoviesPage(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                          label: const Text(
-                            'DESCUBRIR',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: azul,
-                            foregroundColor: fondo,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-                ),
-              ),
             ),
           ),
+          const SizedBox(height: 27),
+          const SectionHeader(title: 'TENDENCIAS EN NEXORA', subtitle: 'Lo que no te puedes perder'),
+          const SizedBox(height: 13),
+          SizedBox(height: 205, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: trending.length, separatorBuilder: (_, __) => const SizedBox(width: 13), itemBuilder: (context, index) => MediaCard(media: trending[index]))),
+          const SizedBox(height: 27),
+          const SectionHeader(title: 'AVENTURAS PARA DESCUBRIR', subtitle: 'Historias que te llevan más lejos'),
+          const SizedBox(height: 13),
+          SizedBox(height: 205, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: adventures.length, separatorBuilder: (_, __) => const SizedBox(width: 13), itemBuilder: (context, index) => MediaCard(media: adventures[index]))),
+          const SizedBox(height: 27),
+          const SectionHeader(title: 'MÁS ALLÁ DEL UNIVERSO', subtitle: 'Explora ciencia ficción y mundos increíbles'),
+          const SizedBox(height: 13),
+          SizedBox(height: 205, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: sciFi.length, separatorBuilder: (_, __) => const SizedBox(width: 13), itemBuilder: (context, index) => MediaCard(media: sciFi[index]))),
           const SizedBox(height: 28),
-          const SectionHeader(
-            title: 'PELÍCULAS Y SERIES',
-            subtitle: 'Historias para cada momento',
-          ),
+          const SectionHeader(title: 'EXPLORA POR CATEGORÍA', subtitle: 'Elige lo que te apetece disfrutar'),
           const SizedBox(height: 14),
-          SizedBox(
-            height: 205,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: movies.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 13),
-              itemBuilder: (context, index) {
-                return MediaCard(media: movies[index]);
-              },
-            ),
-          ),
-          const SizedBox(height: 28),
-          const SectionHeader(
-            title: 'EXPLORA TU UNIVERSO',
-            subtitle: 'Todo lo que te gusta en un solo lugar',
-          ),
-          const SizedBox(height: 15),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: categories.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.55,
-            ),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.55),
             itemBuilder: (context, index) {
               final item = categories[index];
               return InkWell(
                 borderRadius: BorderRadius.circular(17),
                 onTap: () {
                   if (item.name == 'Películas') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MoviesPage(),
-                      ),
-                    );
+                    openMovies(context);
                   } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CategoryPage(title: item.name),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryPage(title: item.name)));
                   }
                 },
                 child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(17),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF192C4B), Color(0xFF211A40)],
-                    ),
-                    border: Border.all(color: azul.withOpacity(0.25)),
-                  ),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(17), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF192C4B), Color(0xFF211A40)]), border: Border.all(color: azul.withOpacity(0.25))),
                   padding: const EdgeInsets.all(13),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(item.icon, color: azul, size: 29),
-                      const SizedBox(height: 9),
-                      Text(
-                        item.name.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Icon(item.icon, color: azul, size: 29), const SizedBox(height: 9), Text(item.name.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11))]),
                 ),
               );
             },
           ),
           const SizedBox(height: 25),
-          Container(
-            padding: const EdgeInsets.all(17),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: LinearGradient(
-                colors: [azul.withOpacity(0.15), morado.withOpacity(0.15)],
-              ),
-              border: Border.all(color: azul.withOpacity(0.25)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.auto_awesome, color: azul, size: 30),
-                SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'EL UNIVERSO NEXORA',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        'Disfruta, explora y descubre nuevas experiencias.',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Container(padding: const EdgeInsets.all(17), decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), gradient: LinearGradient(colors: [azul.withOpacity(0.15), morado.withOpacity(0.15)]), border: Border.all(color: azul.withOpacity(0.25))), child: const Row(children: [Icon(Icons.auto_awesome, color: azul, size: 30), SizedBox(width: 13), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('EL UNIVERSO NEXORA', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)), SizedBox(height: 5), Text('Disfruta, explora y descubre nuevas experiencias.', style: TextStyle(color: Colors.white70, fontSize: 11))]))])),
         ],
       ),
     );
