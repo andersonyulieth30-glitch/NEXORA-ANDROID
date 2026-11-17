@@ -1500,12 +1500,10 @@ class _MoviesPageState extends State<MoviesPage> {
   String selectedGenre = 'Todas';
 
   List<MovieData> get filteredMovies {
+    final query = searchController.text.toLowerCase().trim();
     return movies.where((movie) {
-      final matchesGenre =
-          selectedGenre == 'Todas' || movie.category == selectedGenre;
-      final query = searchController.text.toLowerCase().trim();
-      final matchesSearch =
-          movie.title.toLowerCase().contains(query) ||
+      final matchesGenre = selectedGenre == 'Todas' || movie.category == selectedGenre;
+      final matchesSearch = movie.title.toLowerCase().contains(query) ||
           movie.category.toLowerCase().contains(query);
       return matchesGenre && matchesSearch;
     }).toList();
@@ -1520,150 +1518,164 @@ class _MoviesPageState extends State<MoviesPage> {
   @override
   Widget build(BuildContext context) {
     final results = filteredMovies;
+    final featured = movies.isNotEmpty ? movies.first : null;
+    final recommendations = movies.skip(1).take(5).toList();
 
     return Scaffold(
       backgroundColor: fondo,
       appBar: AppBar(
         backgroundColor: fondo,
-        title: const Text(
-          'PELÍCULAS',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
+        elevation: 0,
+        title: const Row(
+          children: [
+            Icon(Icons.movie_filter_rounded, color: azul, size: 23),
+            SizedBox(width: 9),
+            Text('CINE NEXORA', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.6)),
+          ],
         ),
         iconTheme: const IconThemeData(color: azul),
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 25),
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
           children: [
-            const Text(
-              'TU PRÓXIMA HISTORIA',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-            ),
+            const Text('ELIGE TU PRÓXIMA AVENTURA',
+                style: TextStyle(fontSize: 22, height: 1.12, fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
-            const Text(
-              'Encuentra algo que te encante.',
-              style: TextStyle(color: Colors.white60),
-            ),
-            const SizedBox(height: 20),
+            const Text('Historias para cada momento, en un solo lugar.',
+                style: TextStyle(color: Color(0xFF9BAAC8), fontSize: 12)),
+            const SizedBox(height: 18),
+            if (featured != null)
+              InkWell(
+                borderRadius: BorderRadius.circular(21),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => MovieDetailPage(movie: featured))),
+                child: Container(
+                  height: 230,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(21),
+                    border: Border.all(color: azul.withOpacity(0.38)),
+                    boxShadow: [BoxShadow(color: azul.withOpacity(0.10), blurRadius: 22)],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(fit: StackFit.expand, children: [
+                      Image.network(featured.image, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(color: panel,
+                          child: const Icon(Icons.movie_creation_outlined, color: azul, size: 65))),
+                      const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                        colors: [Color(0x11000000), Color(0xEE050817)]))),
+                      Positioned(left: 16, right: 16, bottom: 16, child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(color: azul.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(20), border: Border.all(color: azul)),
+                            child: const Text('RECOMENDACIÓN NEXORA', style: TextStyle(
+                              color: azul, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1))),
+                          const SizedBox(height: 9),
+                          Text(featured.title.toUpperCase(), maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 23, height: 1.05, fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 5),
+                          Text('${featured.category}  ·  ${featured.duration}',
+                            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                          const SizedBox(height: 11),
+                          Row(children: [
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                              decoration: BoxDecoration(color: azul, borderRadius: BorderRadius.circular(10)),
+                              child: const Row(children: [Icon(Icons.play_arrow_rounded, color: fondo, size: 18),
+                                SizedBox(width: 5), Text('VER DETALLES', style: TextStyle(color: fondo,
+                                  fontSize: 10, fontWeight: FontWeight.w900))])),
+                            const SizedBox(width: 9),
+                            const Icon(Icons.info_outline_rounded, color: Colors.white70, size: 18),
+                          ]),
+                        ],
+                      )),
+                    ]),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 24),
+            const Row(children: [Icon(Icons.local_fire_department_rounded, color: azul, size: 20),
+              SizedBox(width: 7), Text('RECOMENDADAS PARA TI', style: TextStyle(
+                fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: 12))]),
+            const SizedBox(height: 13),
+            if (recommendations.isNotEmpty)
+              SizedBox(height: 205, child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: recommendations.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 13),
+                itemBuilder: (context, index) => MediaCard(media: recommendations[index]),
+              )),
+            const SizedBox(height: 25),
             TextField(
               controller: searchController,
               onChanged: (_) => setState(() {}),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
-                hintText: 'Buscar películas o géneros...',
-                prefixIcon: const Icon(Icons.search, color: azul),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    searchController.clear();
-                    setState(() {});
-                  },
-                  icon: const Icon(Icons.close),
-                ),
-                filled: true,
-                fillColor: panel,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
+                hintText: 'Buscar por título o género...',
+                hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                prefixIcon: const Icon(Icons.search_rounded, color: azul),
+                suffixIcon: searchController.text.isEmpty ? null : IconButton(
+                  onPressed: () { searchController.clear(); setState(() {}); },
+                  icon: const Icon(Icons.close_rounded, color: Colors.white60)),
+                filled: true, fillColor: panel,
+                contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide(color: azul.withOpacity(0.16))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: azul)),
               ),
             ),
             const SizedBox(height: 22),
-            const Text(
-              'EXPLORAR POR GÉNERO',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-                fontSize: 12,
-              ),
-            ),
+            const Text('EXPLORAR POR GÉNERO', style: TextStyle(
+              fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: 12)),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 40,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: movieGenres.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final genre = movieGenres[index];
-                  final active = selectedGenre == genre;
-                  return ChoiceChip(
-                    label: Text(genre),
-                    selected: active,
-                    onSelected: (_) {
-                      setState(() => selectedGenre = genre);
-                    },
-                    selectedColor: azul,
-                    backgroundColor: panel,
-                    labelStyle: TextStyle(
-                      color: active ? fondo : Colors.white70,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                    side: BorderSide(
-                      color: active ? azul : Colors.white12,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'CATÁLOGO NEXORA',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-                Text(
-                  '${results.length} títulos',
-                  style: const TextStyle(color: azul, fontSize: 12),
-                ),
-              ],
-            ),
+            SizedBox(height: 40, child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: movieGenres.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final genre = movieGenres[index];
+                final active = selectedGenre == genre;
+                return ChoiceChip(
+                  label: Text(genre), selected: active,
+                  onSelected: (_) => setState(() => selectedGenre = genre),
+                  selectedColor: azul, backgroundColor: panel,
+                  labelStyle: TextStyle(color: active ? fondo : Colors.white70,
+                    fontWeight: FontWeight.bold, fontSize: 11),
+                  side: BorderSide(color: active ? azul : Colors.white12),
+                );
+              },
+            )),
+            const SizedBox(height: 23),
+            Row(children: [
+              const Expanded(child: Text('TODAS LAS PELÍCULAS', style: TextStyle(
+                fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: 12))),
+              Text('${results.length} títulos', style: const TextStyle(color: azul, fontSize: 11)),
+            ]),
             const SizedBox(height: 15),
             if (results.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 55),
-                child: Column(
-                  children: [
-                    Icon(Icons.search_off_rounded, color: azul, size: 55),
-                    SizedBox(height: 12),
-                    Text(
-                      'No encontramos películas.',
-                      style: TextStyle(color: Colors.white70, fontSize: 15),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      'Prueba con otro nombre o género.',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
-                    ),
-                  ],
-                ),
-              )
+              const Padding(padding: EdgeInsets.symmetric(vertical: 55), child: Column(children: [
+                Icon(Icons.search_off_rounded, color: azul, size: 55),
+                SizedBox(height: 12),
+                Text('No encontramos películas.', style: TextStyle(color: Colors.white70, fontSize: 15)),
+                SizedBox(height: 5),
+                Text('Prueba con otro nombre o género.', style: TextStyle(color: Colors.white38, fontSize: 12)),
+              ]))
             else
               GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
                 itemCount: results.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 13,
-                  mainAxisSpacing: 18,
-                  childAspectRatio: 0.61,
-                ),
-                itemBuilder: (context, index) {
-                  return MoviePoster(movie: results[index]);
-                },
+                  crossAxisCount: 2, crossAxisSpacing: 13, mainAxisSpacing: 18,
+                  childAspectRatio: 0.61),
+                itemBuilder: (context, index) => MoviePoster(movie: results[index]),
               ),
             const SizedBox(height: 20),
-            const Text(
-              'Los títulos e imágenes actuales son demostrativos.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 10),
-            ),
+            const Text('Los títulos e imágenes actuales son demostrativos.',
+              textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 10)),
           ],
         ),
       ),
