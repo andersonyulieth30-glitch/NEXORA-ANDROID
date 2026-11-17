@@ -171,6 +171,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       backgroundColor: fondo,
       body: LayoutBuilder(
         builder: (context, constraints) {
+          final compact = constraints.maxHeight < 760;
+          final mascotHeight = compact ? 225.0 : 295.0;
           return Stack(
             children: [
               const Positioned.fill(child: CustomPaint(painter: StarPainter())),
@@ -178,12 +180,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      center: const Alignment(0, -0.25),
-                      radius: 1.25,
+                      center: const Alignment(0, -0.12),
+                      radius: 1.15,
                       colors: [
-                        const Color(0xFF163B78).withOpacity(0.72),
-                        const Color(0xFF17113D).withOpacity(0.72),
-                        fondo,
+                        const Color(0xFF123D83).withOpacity(0.78),
+                        const Color(0xFF171044).withOpacity(0.86),
+                        const Color(0xFF030615),
                       ],
                     ),
                   ),
@@ -191,107 +193,112 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               ),
               SafeArea(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(22, compact ? 8 : 13, 22, 20),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight - 36),
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - (compact ? 28 : 33),
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const NexoraLogo(size: 39),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'NEXORA',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 19,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2.8,
-                              ),
-                            ),
-                            const Spacer(),
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
+                                color: const Color(0x66101836),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white12),
+                                border: Border.all(color: Colors.white24),
                               ),
                               child: IconButton(
+                                tooltip: 'Configuración',
                                 onPressed: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Configuración próximamente.')),
+                                    const SnackBar(
+                                      content: Text('Configuración próximamente.'),
+                                    ),
                                   );
                                 },
-                                icon: const Icon(Icons.tune_rounded, color: Colors.white70),
+                                icon: const Icon(
+                                  Icons.settings_rounded,
+                                  color: Colors.white,
+                                  size: 25,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 25),
+                        SizedBox(height: compact ? 0 : 4),
                         Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: azul.withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: azul.withOpacity(0.35)),
-                              ),
-                              child: const Text(
-                                'TU UNIVERSO DIGITAL',
+                            AnimatedBuilder(
+                              animation: animation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: 1 + animation.value * 0.035,
+                                  child: child,
+                                );
+                              },
+                              child: const NexoraLogo(size: 88),
+                            ),
+                            const SizedBox(height: 3),
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Colors.white, Color(0xFFBBD8FF), azul, morado],
+                              ).createShader(bounds),
+                              child: Text(
+                                'NEXORA',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: azul,
-                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontSize: compact ? 39 : 46,
+                                  height: 1,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 2,
+                                  letterSpacing: 4.2,
+                                  shadows: const [Shadow(color: azul, blurRadius: 25)],
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'TU MUNDO.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 38,
-                                height: 1.0,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2.2,
-                                shadows: [Shadow(color: azul, blurRadius: 22)],
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            const Text(
-                              'TU ENTRETENIMIENTO.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: azul,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.3,
                               ),
                             ),
                             const SizedBox(height: 9),
                             const Text(
-                              'Películas, series y nuevas experiencias\nen un solo lugar.',
+                              'Tu mundo. Tu entretenimiento.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.45),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                fontStyle: FontStyle.italic,
+                                letterSpacing: 0.4,
+                                shadows: [Shadow(color: morado, blurRadius: 12)],
+                              ),
+                            ),
+                            const SizedBox(height: 13),
+                            Container(
+                              width: 190,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(5),
+                                gradient: const LinearGradient(colors: [azul, morado]),
+                                boxShadow: const [BoxShadow(color: azul, blurRadius: 12)],
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        const WelcomeMascot(),
-                        const SizedBox(height: 12),
+                        SizedBox(height: compact ? 0 : 7),
+                        SizedBox(
+                          height: mascotHeight,
+                          child: const WelcomeMascot(),
+                        ),
                         Column(
                           children: [
                             NeonButton(
                               text: 'Iniciar Sesión',
-                              icon: Icons.login_rounded,
+                              icon: Icons.person_rounded,
                               color: azul,
                               onTap: () => abrirAcceso('Iniciar sesión'),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 13),
                             NeonButton(
                               text: 'Crear Cuenta',
                               icon: Icons.person_add_alt_1_rounded,
@@ -300,37 +307,48 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 19),
+                        const SizedBox(height: 18),
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 5),
                           decoration: BoxDecoration(
-                            color: const Color(0xCC0B142B),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: azul.withOpacity(0.24)),
+                            color: const Color(0xCC080F27),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: azul.withOpacity(0.45), width: 1.2),
+                            boxShadow: [
+                              BoxShadow(color: azul.withOpacity(0.12), blurRadius: 18),
+                            ],
                           ),
                           child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              WelcomeCategory(icon: Icons.movie_rounded, label: 'Películas'),
+                              WelcomeCategory(icon: Icons.movie_creation_rounded, label: 'Películas'),
                               WelcomeDivider(),
                               WelcomeCategory(icon: Icons.live_tv_rounded, label: 'Series'),
                               WelcomeDivider(),
                               WelcomeCategory(icon: Icons.sports_esports_rounded, label: 'Juegos'),
                               WelcomeDivider(),
-                              WelcomeCategory(icon: Icons.auto_awesome_rounded, label: 'Más'),
+                              WelcomeCategory(icon: Icons.star_rounded, label: 'Y mucho más...'),
                             ],
                           ),
                         ),
                         const SizedBox(height: 17),
-                        const Text(
-                          'DISFRUTA  ·  EXPLORA  ·  DESCUBRE',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: azul,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.1,
-                          ),
+                        Row(
+                          children: [
+                            const Expanded(child: NeonLine()),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                'DISFRUTA  ·  EXPLORA  ·  DESCUBRE',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: azul,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2.0,
+                                ),
+                              ),
+                            ),
+                            const Expanded(child: NeonLine()),
+                          ],
                         ),
                       ],
                     ),
@@ -683,12 +701,27 @@ class NexoraRobot extends StatelessWidget {
 
   Widget _robotEar(Color color) {
     return Container(
-      width: 20,
-      height: 49,
+      width: 34,
+      height: 68,
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: color, blurRadius: 13)],
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF172B50), Color(0xFF050B1D)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color, width: 2.5),
+        boxShadow: [
+          BoxShadow(color: color.withOpacity(0.85), blurRadius: 17),
+        ],
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withOpacity(0.9), width: 2),
+          color: color.withOpacity(0.16),
+        ),
       ),
     );
   }
