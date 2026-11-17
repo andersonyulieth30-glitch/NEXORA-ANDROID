@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:video_player/video_player.dart';
 
 Future<void> main() async {
@@ -1860,7 +1861,61 @@ class MovieDetailPage extends StatefulWidget {
 }
 
 class _MovieDetailPageState extends State<MovieDetailPage> {
-  bool saved = false;
+  bool saving = false;
+
+  Future<void> toggleFavorite(bool currentlySaved) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inicia sesión para guardar favoritos.')),
+      );
+      return;
+    }
+    if (saving) return;
+
+    setState(() => saving = true);
+    final favoriteRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.movie.title);
+
+    try {
+      if (currentlySaved) {
+        await favoriteRef.delete();
+      } else {
+        await favoriteRef.set({
+          'title': widget.movie.title,
+          'category': widget.movie.category,
+          'description': widget.movie.description,
+          'duration': widget.movie.duration,
+          'image': widget.movie.image,
+          'savedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              currentlySaved
+                  ? 'Eliminada de tu lista.'
+                  : 'Agregada a tu lista.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo actualizar tu biblioteca.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
 
   void reproducirVideo() {
     Navigator.push(
@@ -2017,40 +2072,63 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     ),
                   ),
                   const SizedBox(height: 13),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() => saved = !saved);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              saved
-                                  ? 'Agregada a tu lista.'
-                                  : 'Eliminada de tu lista.',
+                  Builder(
+                    builder: (context) {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final favoriteRef = FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('favorites')
+                          .doc(movie.title);
+
+                      return StreamBuilder<
+                          DocumentSnapshot<Map<String, dynamic>>>(
+                        stream: favoriteRef.snapshots(),
+                        builder: (context, snapshot) {
+                          final saved = snapshot.data?.exists ?? false;
+                          final waiting =
+                              snapshot.connectionState == ConnectionState.waiting;
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: OutlinedButton.icon(
+                              onPressed: saving || waiting
+                                  ? null
+                                  : () => toggleFavorite(saved),
+                              icon: saving || waiting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: azul,
+                                      ),
+                                    )
+                                  : Icon(
+                                      saved
+                                          ? Icons.bookmark
+                                          : Icons.bookmark_add_outlined,
+                                    ),
+                              label: Text(
+                                saved
+                                    ? 'AGREGADA A MI LISTA'
+                                    : 'AGREGAR A MI LISTA',
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: azul,
+                                side: const BorderSide(color: azul),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        saved
-                            ? Icons.bookmark
-                            : Icons.bookmark_add_outlined,
-                      ),
-                      label: Text(
-                        saved
-                            ? 'AGREGADA A MI LISTA'
-                            : 'AGREGAR A MI LISTA',
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: azul,
-                        side: const BorderSide(color: azul),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                    ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
@@ -2445,12 +2523,233 @@ class ExplorePage extends StatelessWidget {
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
 
+  Future<void> _deleteFavorite(
+    BuildContext context,
+    DocumentReference<Map<String, dynamic>> reference,
+  ) async {
+    try {
+      await reference.delete();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Eliminada de tu biblioteca.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo eliminar este favorito.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const SimplePage(
-      icon: Icons.bookmark,
-      title: 'Mi biblioteca',
-      message: 'Aquí podrás guardar tus películas y series favoritas.',
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const SimplePage(
+        icon: Icons.bookmark,
+        title: 'MI BIBLIOTECA',
+        message: 'Inicia sesión para ver tus favoritos.',
+      );
+    }
+
+    final favoritesStream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .orderBy('savedAt', descending: true)
+        .snapshots();
+
+    return SafeArea(
+      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: favoritesStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: azul),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(25),
+                child: Text(
+                  'No se pudo cargar tu biblioteca. Inténtalo nuevamente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            );
+          }
+
+          final documents = snapshot.data?.docs ?? [];
+          if (documents.isEmpty) {
+            return const SimplePage(
+              icon: Icons.bookmark_border,
+              title: 'MI BIBLIOTECA',
+              message:
+                  'Todavía no tienes favoritos. Guarda una película para verla aquí.',
+            );
+          }
+
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'MI BIBLIOTECA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        '${documents.length} elemento${documents.length == 1 ? '' : 's'} guardado${documents.length == 1 ? '' : 's'}',
+                        style: const TextStyle(color: Colors.white60),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final document = documents[index];
+                      final data = document.data();
+                      final movie = MovieData(
+                        title: data['title'] as String? ?? document.id,
+                        category: data['category'] as String? ?? '',
+                        description: data['description'] as String? ?? '',
+                        duration: data['duration'] as String? ?? '',
+                        image: data['image'] as String? ?? '',
+                      );
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 13),
+                        decoration: BoxDecoration(
+                          color: panel,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: azul.withOpacity(0.18),
+                          ),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MovieDetailPage(movie: movie),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(11),
+                                  child: SizedBox(
+                                    width: 88,
+                                    height: 112,
+                                    child: movie.image.isEmpty
+                                        ? Container(
+                                            color: fondo,
+                                            child: const Icon(
+                                              Icons.movie,
+                                              color: azul,
+                                              size: 35,
+                                            ),
+                                          )
+                                        : Image.network(
+                                            movie.image,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) {
+                                              return Container(
+                                                color: fondo,
+                                                child: const Icon(
+                                                  Icons.movie,
+                                                  color: azul,
+                                                  size: 35,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                  ),
+                                ),
+                                const SizedBox(width: 13),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        movie.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 7),
+                                      Text(
+                                        movie.category,
+                                        style: const TextStyle(
+                                          color: azul,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 7),
+                                      Text(
+                                        movie.duration,
+                                        style: const TextStyle(
+                                          color: Colors.white60,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Eliminar de favoritos',
+                                  onPressed: () =>
+                                      _deleteFavorite(context, document.reference),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: documents.length,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -2618,3 +2917,17 @@ class StarPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+this.icon);
+}
+
+// FONDO ESTRELLADO
+
+class StarPainter extends CustomPainter {
+  const StarPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = math.Random(12);
+    final paint = Paint();
+
+    for (int i = 0; i < 150; i
