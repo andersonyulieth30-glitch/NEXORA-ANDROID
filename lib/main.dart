@@ -1014,137 +1014,156 @@ class _AccessScreenState extends State<AccessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = esRegistro ? morado : azul;
     return Scaffold(
       backgroundColor: fondo,
-      appBar: AppBar(
-        backgroundColor: fondo,
-        title: const Text('NEXORA'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(25),
-        child: Form(
-          key: formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 35),
-              const NexoraLogo(size: 75),
-              const SizedBox(height: 20),
-              Text(
-                widget.tipo,
-                style: const TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 30),
-              TextFormField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: 'Correo electrónico',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Escribe tu correo electrónico.';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
-                      .hasMatch(value.trim())) {
-                    return 'Escribe un correo válido.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 18),
-              TextFormField(
-                controller: passwordController,
-                obscureText: ocultarPassword,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() => ocultarPassword = !ocultarPassword);
-                    },
-                    icon: Icon(
-                      ocultarPassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Escribe tu contraseña.';
-                  }
-                  if (esRegistro && value.length < 6) {
-                    return 'Usa al menos 6 caracteres.';
-                  }
-                  return null;
-                },
-              ),
-              if (!esRegistro)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: recuperarPassword,
-                    child: const Text(
-                      '¿Olvidaste tu contraseña?',
-                      style: TextStyle(color: azul),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 25),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: cargando ? null : continuar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: azul,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: cargando
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          esRegistro ? 'CREAR CUENTA' : 'INICIAR SESIÓN',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextButton(
-                onPressed: cambiarTipo,
-                child: Text(
-                  esRegistro
-                      ? '¿Ya tienes cuenta? Inicia sesión'
-                      : '¿No tienes cuenta? Regístrate',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: azul),
-                ),
-              ),
-              const SizedBox(height: 15),
-              const Text(
-                'Tu cuenta estará protegida mediante Firebase.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60),
-              ),
-            ],
+      body: Stack(
+        children: [
+          const Positioned.fill(child: CustomPaint(painter: StarPainter())),
+          Positioned(
+            top: -110,
+            right: -90,
+            child: _AmbientGlow(color: accent.withOpacity(0.32), size: 250),
           ),
-        ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          tooltip: 'Volver',
+                        ),
+                        const Spacer(),
+                        const Text('NEXORA', style: TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 3,
+                        )),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Center(child: Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accent.withOpacity(0.12),
+                        border: Border.all(color: accent.withOpacity(0.6)),
+                        boxShadow: [BoxShadow(color: accent.withOpacity(0.18), blurRadius: 28)],
+                      ),
+                      child: NexoraLogo(size: 76),
+                    )),
+                    const SizedBox(height: 24),
+                    Text(
+                      esRegistro ? 'ÚNETE A NEXORA' : 'QUÉ BUENO TENERTE DE VUELTA',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: 0.7),
+                    ),
+                    const SizedBox(height: 9),
+                    Text(
+                      esRegistro ? 'Crea tu cuenta y comienza a descubrir.' : 'Inicia sesión para entrar a tu universo de entretenimiento.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.5),
+                    ),
+                    const SizedBox(height: 30),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xCC101A32),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: accent.withOpacity(0.28)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text('CORREO ELECTRÓNICO', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.3)),
+                          const SizedBox(height: 9),
+                          TextFormField(
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            autocorrect: false,
+                            decoration: const InputDecoration(hintText: 'tu correo electrónico', prefixIcon: Icon(Icons.email_outlined)),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) return 'Escribe tu correo electrónico.';
+                              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value.trim())) return 'Escribe un correo válido.';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          const Text('CONTRASEÑA', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.3)),
+                          const SizedBox(height: 9),
+                          TextFormField(
+                            controller: passwordController,
+                            obscureText: ocultarPassword,
+                            decoration: InputDecoration(
+                              hintText: 'Tu contraseña',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(() => ocultarPassword = !ocultarPassword),
+                                icon: Icon(ocultarPassword ? Icons.visibility_rounded : Icons.visibility_off_rounded),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Escribe tu contraseña.';
+                              if (esRegistro && value.length < 6) return 'Usa al menos 6 caracteres.';
+                              return null;
+                            },
+                          ),
+                          if (!esRegistro)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(onPressed: recuperarPassword, child: const Text('¿Olvidaste tu contraseña?', style: TextStyle(color: azul))),
+                            )
+                          else
+                            const SizedBox(height: 18),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 56,
+                            child: ElevatedButton.icon(
+                              onPressed: cargando ? null : continuar,
+                              icon: cargando ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Icon(esRegistro ? Icons.person_add_alt_1_rounded : Icons.login_rounded),
+                              label: Text(esRegistro ? 'CREAR MI CUENTA' : 'ENTRAR A NEXORA', style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accent == azul ? const Color(0xFF0879D9) : const Color(0xFF7628C8),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: accent, width: 1.2)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed: cambiarTipo,
+                      child: Text(
+                        esRegistro ? '¿Ya tienes cuenta? Inicia sesión' : '¿Aún no tienes cuenta? Regístrate',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: accent, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.verified_user_rounded, color: Colors.white38, size: 15),
+                        SizedBox(width: 7),
+                        Text('Acceso protegido mediante Firebase', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1184,38 +1203,62 @@ class _MainScreenState extends State<MainScreen> {
           IndexedStack(index: selected, children: pages),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selected,
-        onDestinationSelected: (index) {
-          setState(() => selected = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Inicio',
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+          decoration: BoxDecoration(
+            color: const Color(0xF20B1224),
+            borderRadius: BorderRadius.circular(23),
+            border: Border.all(color: azul.withOpacity(0.22)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 22, offset: const Offset(0, 7))],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.movie_outlined),
-            selectedIcon: Icon(Icons.movie_rounded),
-            label: 'Películas',
+          child: Row(
+            children: [
+              _NavItem(icon: Icons.home_rounded, label: 'Inicio', selected: selected == 0, onTap: () => setState(() => selected = 0)),
+              _NavItem(icon: Icons.movie_rounded, label: 'Películas', selected: selected == 1, onTap: () => setState(() => selected = 1)),
+              _NavItem(icon: Icons.explore_rounded, label: 'Explorar', selected: selected == 2, onTap: () => setState(() => selected = 2)),
+              _NavItem(icon: Icons.bookmark_rounded, label: 'Biblioteca', selected: selected == 3, onTap: () => setState(() => selected = 3)),
+              _NavItem(icon: Icons.person_rounded, label: 'Perfil', selected: selected == 4, onTap: () => setState(() => selected = 4)),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore_rounded),
-            label: 'Explorar',
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavItem({required this.icon, required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(17),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+          decoration: BoxDecoration(
+            color: selected ? azul.withOpacity(0.13) : Colors.transparent,
+            borderRadius: BorderRadius.circular(17),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.bookmark_border_rounded),
-            selectedIcon: Icon(Icons.bookmark_rounded),
-            label: 'Biblioteca',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: selected ? azul : Colors.white54, size: 22),
+              const SizedBox(height: 4),
+              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: selected ? azul : Colors.white54, fontSize: 9, fontWeight: selected ? FontWeight.w900 : FontWeight.w500)),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Perfil',
-          ),
-        ],
+        ),
       ),
     );
   }
