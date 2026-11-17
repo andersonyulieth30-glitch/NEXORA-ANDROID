@@ -1669,6 +1669,8 @@ class HomePage extends StatelessWidget {
                 onTap: () {
                   if (item.name == 'Películas') {
                     openMovies(context);
+                  } else if (item.name == 'Series') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SeriesPage()));
                   } else {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryPage(title: item.name)));
                   }
