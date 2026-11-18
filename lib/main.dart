@@ -2965,6 +2965,7 @@ class LibraryPage extends StatelessWidget {
                         final movie = MovieData(
                           title: data['title'] as String? ?? document.id,
                           category: data['category'] as String? ?? '',
+                          year: data['year'] as String? ?? '',
                           description: data['description'] as String? ?? '',
                           duration: data['duration'] as String? ?? '',
                           image: data['image'] as String? ?? '',
