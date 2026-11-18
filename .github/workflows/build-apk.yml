@@ -4,13 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - master
+      - principal
+      - maestro
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
@@ -37,19 +36,12 @@ jobs:
           settings = Path("android/settings.gradle")
           wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
           content = settings.read_text()
-          content = content.replace(
-              'id "com.android.application" version "7.3.0"',
-              'id "com.android.application" version "8.1.0"'
-          )
-          content = content.replace(
-              'id "org.jetbrains.kotlin.android" version "1.7.10"',
-              'id "org.jetbrains.kotlin.android" version "1.8.22"'
-          )
+          content = content.replace('id "com.android.application" version "7.3.0"', 'id "com.android.application" version "8.1.0"')
+          content = content.replace('id "org.jetbrains.kotlin.android" version "1.7.10"', 'id "org.jetbrains.kotlin.android" version "1.8.22"')
           settings.write_text(content)
-          content = wrapper.read_text()
-          content = content.replace("gradle-7.6.3-all.zip", "gradle-8.0.2-all.zip")
+          content = wrapper.read_text().replace("gradle-7.6.3-all.zip", "gradle-8.0.2-all.zip")
           wrapper.write_text(content)
-          print("Versiones de Android Gradle Plugin, Kotlin y Gradle actualizadas.")
+          print("Versiones de Gradle actualizadas.")
           PY
 
       - name: Configurar Firebase Android
@@ -63,13 +55,10 @@ jobs:
           def add_plugin(path, plugin_line):
               content = path.read_text()
               if plugin_line not in content:
-                  start = content.find("plugins {")
-                  if start == -1:
+                  match = re.search(r'(?ms)^plugins\s*\{.*?^\}', content)
+                  if not match:
                       raise SystemExit(f"No se encontro plugins en {path}")
-                  end = content.find("\n}", start)
-                  if end == -1:
-                      raise SystemExit(f"No se encontro cierre de plugins en {path}")
-                  content = content[:end] + "\n    " + plugin_line + content[end:]
+                  content = content[:match.end()] + "\n    " + plugin_line + content[match.end():]
                   path.write_text(content)
           add_plugin(settings, 'id "com.google.gms.google-services" version "4.4.2" apply false')
           add_plugin(app, 'id "com.google.gms.google-services"')
@@ -78,7 +67,7 @@ jobs:
           content = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 23', content)
           content = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 23', content)
           app.write_text(content)
-          print("Configuracion de Firebase y Android aplicada.")
+          print("Firebase configurado.")
           PY
 
       - name: Preparar firma permanente
@@ -89,10 +78,10 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -e
-          test -n "$KEYSTORE_BASE64" || (echo "Falta el secreto KEYSTORE_BASE64"; exit 1)
-          test -n "$KEYSTORE_PASSWORD" || (echo "Falta el secreto KEYSTORE_PASSWORD"; exit 1)
-          test -n "$KEY_ALIAS" || (echo "Falta el secreto KEY_ALIAS"; exit 1)
-          test -n "$KEY_PASSWORD" || (echo "Falta el secreto KEY_PASSWORD"; exit 1)
+          test -n "$KEYSTORE_BASE64" || (echo "Falta KEYSTORE_BASE64"; exit 1)
+          test -n "$KEYSTORE_PASSWORD" || (echo "Falta KEYSTORE_PASSWORD"; exit 1)
+          test -n "$KEY_ALIAS" || (echo "Falta KEY_ALIAS"; exit 1)
+          test -n "$KEY_PASSWORD" || (echo "Falta KEY_PASSWORD"; exit 1)
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/nexora-upload-key.jks
           cat > android/key.properties <<EOF
           storePassword=$KEYSTORE_PASSWORD
@@ -103,48 +92,54 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
+
           app = Path("android/app/build.gradle")
           content = app.read_text()
-          if "def keystoreProperties = new Properties()" not in content:
-              properties_block = """
-def keystoreProperties = new Properties()
-          def keystorePropertiesFile = rootProject.file('key.properties')
-          if (!keystorePropertiesFile.exists()) {
-              throw new GradleException('No se encontro android/key.properties')
-          }
-          keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-          """
-              plugins_end = re.search(r'(?m)^\s*}\s*$', content[content.find("plugins {"):])
-              if content.find("plugins {") == -1 or not plugins_end:
-                  raise SystemExit("No se encontro el bloque plugins en android/app/build.gradle")
-              insert_at = content.find("plugins {") + plugins_end.end()
-              content = content[:insert_at] + properties_block + content[insert_at:]
-          if "signingConfigs {" not in content:
-              signing = """    signingConfigs {
-                  release {
-                      keyAlias keystoreProperties['keyAlias']
-                      keyPassword keystoreProperties['keyPassword']
-                      storeFile file(keystoreProperties['storeFile'])
-                      storePassword keystoreProperties['storePassword']
-                  }
-              }
 
-          """
+          if "def keystoreProperties = new Properties()" not in content:
+              match = re.search(r'(?ms)^plugins\s*\{.*?^\}', content)
+              if not match:
+                  raise SystemExit("No se encontro el bloque plugins")
+              lines = [
+                  "def keystoreProperties = new Properties()",
+                  "def keystorePropertiesFile = rootProject.file('key.properties')",
+                  "if (!keystorePropertiesFile.exists()) {",
+                  "    throw new GradleException('No se encontro android/key.properties')",
+                  "}",
+                  "keystoreProperties.load(new FileInputStream(keystorePropertiesFile))",
+              ]
+              block = "\n\n" + "\n".join(lines) + "\n"
+              content = content[:match.end()] + block + content[match.end():]
+
+          if "signingConfigs {" not in content:
+              signing_lines = [
+                  "    signingConfigs {",
+                  "        release {",
+                  "            keyAlias keystoreProperties['keyAlias']",
+                  "            keyPassword keystoreProperties['keyPassword']",
+                  "            storeFile file(keystoreProperties['storeFile'])",
+                  "            storePassword keystoreProperties['storePassword']",
+                  "        }",
+                  "    }",
+                  "",
+              ]
               if "    buildTypes {" not in content:
-                  raise SystemExit("No se encontro buildTypes en android/app/build.gradle")
-              content = content.replace("    buildTypes {", signing + "    buildTypes {", 1)
-          content, count = re.subn(
+                  raise SystemExit("No se encontro buildTypes")
+              content = content.replace("    buildTypes {", "\n".join(signing_lines) + "    buildTypes {", 1)
+
+          content = re.sub(
               r'signingConfig\s*=\s*signingConfigs\.debug|signingConfig\s+signingConfigs\.debug',
-              'signingConfig signingConfigs.release', content
+              'signingConfig signingConfigs.release',
+              content
           )
-          if count == 0 and "signingConfig signingConfigs.release" not in content:
+          if "signingConfig signingConfigs.release" not in content:
               match = re.search(r'(buildTypes\s*\{\s*release\s*\{)', content)
               if not match:
-                  raise SystemExit("No se encontro buildTypes.release para configurar la firma")
-              pos = match.end()
-              content = content[:pos] + "\n            signingConfig signingConfigs.release" + content[pos:]
+                  raise SystemExit("No se encontro buildTypes.release")
+              content = content[:match.end()] + "\n            signingConfig signingConfigs.release" + content[match.end():]
+
           app.write_text(content)
-          print("Firma permanente configurada en Gradle.")
+          print("Firma permanente configurada.")
           PY
 
       - name: Instalar dependencias
@@ -158,3 +153,18 @@ def keystoreProperties = new Properties()
         with:
           name: NEXORA-APK-FIRMADO
           path: build/app/outputs/flutter-apk/app-release.apk
+es {", 1)
+
+          content = re.sub(
+              r'signingConfig\s*=\s*signingConfigs\.debug|signingConfig\s+signingConfigs\.debug',
+              'signingConfig signingConfigs.release',
+              content
+          )
+          if "signingConfig signingConfigs.release" not in content:
+              match = re.search(r'(buildTypes\s*\{\s*release\s*\{)', content)
+              if not match:
+                  raise SystemExit("No se encontro buildTypes.release")
+              content = content[:match.end()] + "\n            signingConfig signingConfigs.release" + content[match.end():]
+
+          app.write_text(content)
+          print("Firma per
