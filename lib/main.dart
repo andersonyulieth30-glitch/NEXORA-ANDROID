@@ -1403,239 +1403,398 @@ const List<String> movieGenres = [
   'Documental',
 ];
 
-// CATÁLOGO DE SERIES - TRAKT API. Los textos se solicitan en español.
-Map<String, String> _traktHeaders() => {
-  'Content-Type': 'application/json',
-  'trakt-api-version': '2',
-  'trakt-api-key': traktClientId,
-};
-
-String _traktImage(Map<String, dynamic> data) {
-  final images = data['images'] is Map ? Map<String, dynamic>.from(data['images']) : <String, dynamic>{};
-  final posterList = images['poster'];
-  if (posterList is List && posterList.isNotEmpty) {
-    final value = posterList.first.toString();
-    return value.startsWith('http') ? value : 'https://$value';
-  }
-  return '';
-}
-
-String _spanishGenre(dynamic value) {
-  const names = {
-    'action':'Acción','adventure':'Aventura','animation':'Animación','comedy':'Comedia',
-    'crime':'Crimen','documentary':'Documental','drama':'Drama','family':'Familiar',
-    'fantasy':'Fantasía','history':'Historia','horror':'Terror','music':'Música',
-    'mystery':'Misterio','romance':'Romance','science-fiction':'Ciencia ficción',
-    'thriller':'Suspenso','war':'Bélica','western':'Western','reality':'Telerrealidad',
-    'superhero':'Superhéroes','anime':'Anime'
-  };
-  final key = value.toString().toLowerCase().replaceAll(' ', '-');
-  return names[key] ?? (key.isEmpty ? '' : key[0].toUpperCase()+key.substring(1));
-}
+// CATÁLOGO REAL DE SERIES - TVMAZE (CC BY-SA, CON ATRIBUCIÓN)
 
 class SeriesData {
   final int id;
-  final String title, genre, synopsis, year, image, status;
-  const SeriesData({required this.id, required this.title, required this.genre,
-    required this.synopsis, required this.year, required this.image, required this.status});
-}
+  final String title;
+  final String genre;
+  final String synopsis;
+  final String year;
+  final String image;
+  final String status;
 
-Future<List<SeriesData>> searchTraktShows(String query) async {
-  final endpoint = query.trim().isEmpty
-      ? Uri.https('api.trakt.tv', '/shows/trending', {'page':'1','limit':'24','extended':'full'})
-      : Uri.https('api.trakt.tv', '/search/show', {'query':query.trim(),'page':'1','limit':'24','extended':'full'});
-  final response = await http.get(endpoint, headers:_traktHeaders()).timeout(const Duration(seconds:25));
-  if (response.statusCode != 200) throw Exception('Trakt respondió ${response.statusCode}.');
-  final decoded = jsonDecode(response.body);
-  if (decoded is! List) return [];
-  final entries = <Map<String,dynamic>>[];
-  for (final item in decoded) {
-    if (item is! Map) continue;
-    final show = item['show'] is Map ? item['show'] : item;
-    if (show is Map) entries.add(Map<String,dynamic>.from(show));
+  const SeriesData({
+    required this.id,
+    required this.title,
+    required this.genre,
+    required this.synopsis,
+    required this.year,
+    required this.image,
+    required this.status,
+  });
+
+  factory SeriesData.fromJson(Map<String, dynamic> json) {
+    final premiered = (json['premiered'] ?? '').toString();
+    final imageData = json['image'] is Map ? json['image'] as Map : null;
+    final genresData = json['genres'];
+    final genres = genresData is List
+        ? genresData.map((item) => item.toString()).where((item) => item.isNotEmpty).join(' · ')
+        : '';
+    final rawSummary = (json['summary'] ?? 'Sin sinopsis disponible.').toString();
+    final cleanSummary = rawSummary
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .trim();
+
+    return SeriesData(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: (json['name'] ?? 'Serie sin título').toString(),
+      genre: genres.isEmpty ? 'Series' : genres,
+      synopsis: cleanSummary.isEmpty ? 'Sin sinopsis disponible.' : cleanSummary,
+      year: premiered.length >= 4 ? premiered.substring(0, 4) : 'Año no disponible',
+      image: (imageData?['original'] ?? imageData?['medium'] ?? '').toString(),
+      status: (json['status'] ?? 'Información no disponible').toString(),
+    );
   }
-  final results = await Future.wait(entries.take(24).map((show) async {
-    final ids = show['ids'] is Map ? Map<String,dynamic>.from(show['ids']) : <String,dynamic>{};
-    final id = (ids['trakt'] as num?)?.toInt() ?? 0;
-    String title = (show['title'] ?? 'Serie sin título').toString();
-    String synopsis = 'Sin sinopsis disponible en español.';
-    if (id > 0) {
-      try {
-        final uri = Uri.https('api.trakt.tv','/shows/$id/translations/es');
-        final translatedResponse = await http.get(uri,headers:_traktHeaders()).timeout(const Duration(seconds:12));
-        if (translatedResponse.statusCode == 200) {
-          final translated = jsonDecode(translatedResponse.body);
-          if (translated is List && translated.isNotEmpty && translated.first is Map) {
-            final item = Map<String,dynamic>.from(translated.first);
-            final translatedTitle = (item['title'] ?? '').toString().trim();
-            final translatedOverview = (item['overview'] ?? '').toString().trim();
-            if (translatedTitle.isNotEmpty) title = translatedTitle;
-            if (translatedOverview.isNotEmpty) synopsis = translatedOverview;
-          }
-        }
-      } catch (_) {}
-    }
-    final genres = show['genres'];
-    final genre = genres is List && genres.isNotEmpty ? genres.take(2).map(_spanishGenre).join(' · ') : 'Serie';
-    final statusRaw = (show['status'] ?? '').toString().toLowerCase();
-    final status = statusRaw == 'returning series' ? 'En emisión' : statusRaw == 'ended' ? 'Finalizada' : statusRaw == 'canceled' ? 'Cancelada' : 'Serie';
-    return SeriesData(id:id,title:title,genre:genre,synopsis:synopsis,
-      year:(show['year'] ?? 'Año no disponible').toString(),image:_traktImage(show),status:status);
-  }));
-  return results.where((item)=>item.id>0).toList();
 }
 
-Future<List<Map<String,dynamic>>> loadTraktSeasons(int showId) async {
-  final uri = Uri.https('api.trakt.tv','/shows/$showId/seasons',{'extended':'full'});
-  final response = await http.get(uri,headers:_traktHeaders()).timeout(const Duration(seconds:20));
-  if (response.statusCode != 200) throw Exception('No se pudieron cargar las temporadas.');
-  final data = jsonDecode(response.body);
-  if (data is! List) return [];
-  return data.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).where((e)=>(e['number'] as num?)?.toInt()!=0).toList();
+
+// Traduce sinopsis y descripciones al español. Si el servicio no responde,
+// evita mostrar una descripción en otro idioma.
+final Map<String, String> _spanishTranslationCache = {};
+
+Future<String> translateNexoraText(String text) async {
+  final source = text.trim();
+  if (source.isEmpty) return 'Descripción no disponible en español.';
+  if (_spanishTranslationCache.containsKey(source)) {
+    return _spanishTranslationCache[source]!;
+  }
+  final client = HttpClient();
+  try {
+    final uri = Uri.https('api.mymemory.translated.net', '/get', {
+      'q': source.length > 450 ? source.substring(0, 450) : source,
+      'langpair': 'en|es',
+    });
+    final request = await client.getUrl(uri).timeout(const Duration(seconds: 10));
+    request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
+    final response = await request.close().timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) throw Exception('Translation unavailable');
+    final decoded = jsonDecode(await response.transform(utf8.decoder).join());
+    final translated = (decoded is Map ? decoded['responseData']?['translatedText'] : null)?.toString().trim();
+    if (translated == null || translated.isEmpty) throw Exception('Empty translation');
+    final clean = translated
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>');
+    _spanishTranslationCache[source] = clean;
+    return clean;
+  } catch (_) {
+    return 'Descripción no disponible en español por el momento.';
+  } finally {
+    client.close(force: true);
+  }
 }
 
-Future<List<Map<String,dynamic>>> loadTraktSeasonEpisodes(int showId,int season) async {
-  final uri = Uri.https('api.trakt.tv','/shows/$showId/seasons/$season',{'extended':'full','translations':'es'});
-  final response = await http.get(uri,headers:_traktHeaders()).timeout(const Duration(seconds:20));
-  if (response.statusCode != 200) throw Exception('No se pudieron cargar los episodios.');
-  final data = jsonDecode(response.body);
-  if (data is! List) return [];
-  return data.whereType<Map>().map((e) {
-    final episode = Map<String,dynamic>.from(e);
-    final translations = episode['translations'];
-    if (translations is List) {
-      for (final translation in translations.whereType<Map>()) {
-        if ((translation['language'] ?? '').toString().toLowerCase() == 'es') {
-          final translatedTitle = (translation['title'] ?? '').toString().trim();
-          final translatedOverview = (translation['overview'] ?? '').toString().trim();
-          if (translatedTitle.isNotEmpty) episode['title_es'] = translatedTitle;
-          if (translatedOverview.isNotEmpty) episode['overview_es'] = translatedOverview;
-          break;
-        }
-      }
+Future<List<SeriesData>> searchTvMazeShows(String query) async {
+  final client = HttpClient();
+  try {
+    final uri = Uri.https('api.tvmaze.com', '/search/shows', {'q': query});
+    final request = await client.getUrl(uri).timeout(const Duration(seconds: 15));
+    request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
+    final response = await request.close().timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('No fue posible consultar el catálogo (${response.statusCode}).');
     }
-    return episode;
-  }).toList();
+    final body = await response.transform(utf8.decoder).join();
+    final decoded = jsonDecode(body);
+    if (decoded is! List) return [];
+    return decoded
+        .where((item) => item is Map && item['show'] is Map)
+        .map((item) => SeriesData.fromJson(Map<String, dynamic>.from(item['show'] as Map)))
+        .where((show) => show.id > 0)
+        .toList();
+  } finally {
+    client.close(force: true);
+  }
+}
+
+Future<List<Map<String, dynamic>>> loadTvMazeEpisodes(int showId) async {
+  final client = HttpClient();
+  try {
+    final uri = Uri.https('api.tvmaze.com', '/shows/$showId/episodes');
+    final request = await client.getUrl(uri).timeout(const Duration(seconds: 15));
+    request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
+    final response = await request.close().timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('No fue posible cargar los episodios.');
+    }
+    final body = await response.transform(utf8.decoder).join();
+    final decoded = jsonDecode(body);
+    if (decoded is! List) return [];
+    return decoded.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+  } finally {
+    client.close(force: true);
+  }
 }
 
 class SeriesPage extends StatefulWidget {
   const SeriesPage({super.key});
+
   @override
   State<SeriesPage> createState() => _SeriesPageState();
 }
 
 class _SeriesPageState extends State<SeriesPage> {
-  final TextEditingController searchController = TextEditingController();
+  final TextEditingController searchController = TextEditingController(text: 'the');
   List<SeriesData> results = [];
   bool loading = true;
   String? errorMessage;
 
   @override
-  void initState() { super.initState(); _search(''); }
+  void initState() {
+    super.initState();
+    _search('the');
+  }
+
   @override
-  void dispose() { searchController.dispose(); super.dispose(); }
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _search(String query) async {
-    setState(() { loading=true; errorMessage=null; });
+    final term = query.trim();
+    if (term.isEmpty) {
+      setState(() {
+        results = [];
+        loading = false;
+        errorMessage = 'Escribe el nombre de una serie para buscar.';
+      });
+      return;
+    }
+    setState(() {
+      loading = true;
+      errorMessage = null;
+    });
     try {
-      final found = await searchTraktShows(query);
+      final found = await searchTvMazeShows(term);
       if (!mounted) return;
-      setState(() { results=found; loading=false; if(found.isEmpty) errorMessage='No encontramos series con esa búsqueda.'; });
+      setState(() {
+        results = found;
+        loading = false;
+        if (found.isEmpty) errorMessage = 'No encontramos series con esa búsqueda.';
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() { loading=false; errorMessage='No se pudo conectar al catálogo. Revisa tu internet e inténtalo de nuevo.'; });
+      setState(() {
+        loading = false;
+        errorMessage = 'No se pudo conectar al catálogo. Revisa tu internet e inténtalo de nuevo.';
+      });
     }
   }
 
   void _showDetails(BuildContext context, SeriesData series) {
-    showModalBottomSheet<void>(context:context,isScrollControlled:true,backgroundColor:const Color(0xFF101A30),
-      shape:const RoundedRectangleBorder(borderRadius:BorderRadius.vertical(top:Radius.circular(25))),
-      builder:(_)=>SeriesDetailSheet(series:series));
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101A30),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(5)))),
+                const SizedBox(height: 18),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(17),
+                  child: series.image.isEmpty
+                      ? Container(height: 175, width: double.infinity, color: panel, child: const Icon(Icons.live_tv_rounded, color: azul, size: 55))
+                      : Image.network(series.image, height: 175, width: double.infinity, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(height: 175, color: panel, child: const Icon(Icons.live_tv_rounded, color: azul, size: 55))),
+                ),
+                const SizedBox(height: 16),
+                Text(series.title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                Text('${series.genre}  ·  ${series.year}  ·  ${series.status}', style: const TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                FutureBuilder<String>(
+                  future: translateNexoraText(series.synopsis),
+                  builder: (context, snapshot) => Text(
+                    snapshot.data ?? 'Traduciendo sinopsis al español...',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text('TEMPORADAS Y EPISODIOS', style: TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                const SizedBox(height: 9),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: loadTvMazeEpisodes(series.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator(color: azul)));
+                    }
+                    if (snapshot.hasError) {
+                      return const Text('No se pudieron cargar las temporadas y episodios.', style: TextStyle(color: Colors.white54, fontSize: 12));
+                    }
+                    final episodes = snapshot.data ?? [];
+                    if (episodes.isEmpty) {
+                      return const Text('No hay episodios publicados en el catálogo.', style: TextStyle(color: Colors.white54, fontSize: 12));
+                    }
+                    final seasonNumbers = episodes
+                        .map((episode) => (episode['season'] as num?)?.toInt() ?? 0)
+                        .where((season) => season > 0).toSet().toList()..sort();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: seasonNumbers.map((seasonNumber) {
+                        final seasonEpisodes = episodes.where((episode) => (episode['season'] as num?)?.toInt() == seasonNumber).toList()
+                          ..sort((a, b) => ((a['number'] as num?)?.toInt() ?? 0).compareTo((b['number'] as num?)?.toInt() ?? 0));
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(11),
+                          decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(14), border: Border.all(color: morado.withOpacity(0.25))),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              const Icon(Icons.video_library_rounded, color: azul, size: 19),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text('TEMPORADA $seasonNumber', style: const TextStyle(color: azul, fontSize: 12, fontWeight: FontWeight.w900))),
+                              Text('${seasonEpisodes.length} episodios', style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                            ]),
+                            const SizedBox(height: 9),
+                            ...seasonEpisodes.map((episode) {
+                              final number = episode['number'] ?? '?';
+                              final name = (episode['name'] ?? 'Episodio').toString();
+                              final rawSummary = (episode['summary'] ?? '').toString()
+                                  .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+                                  .replaceAll(RegExp(r'<[^>]*>'), '').trim();
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 7),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(color: fondo.withOpacity(0.65), borderRadius: BorderRadius.circular(10)),
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Row(children: [
+                                    const Icon(Icons.play_circle_outline_rounded, color: azul, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(child: Text('E$number · $name', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800))),
+                                  ]),
+                                  if (rawSummary.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 28, top: 5),
+                                      child: FutureBuilder<String>(
+                                        future: translateNexoraText(rawSummary),
+                                        builder: (context, translated) => Text(
+                                          translated.data ?? 'Traduciendo descripción...',
+                                          maxLines: 4, overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(color: Colors.white60, fontSize: 10, height: 1.4),
+                                        ),
+                                      ),
+                                    ),
+                                ]),
+                              );
+                            }),
+                          ]),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => PlayerScreen(title: '${series.title} · Video de prueba')));
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('PROBAR REPRODUCTOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                  style: ElevatedButton.styleFrom(backgroundColor: azul, foregroundColor: fondo, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13))),
+                )),
+                const SizedBox(height: 8),
+                const Text('Los datos de series y episodios provienen de TVmaze. El botón reproduce un video de demostración; TVmaze no proporciona videos ni derechos de reproducción.', style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(backgroundColor:fondo,
-      appBar:AppBar(title:const Row(children:[Icon(Icons.live_tv_rounded,color:azul),SizedBox(width:9),Text('SERIES NEXORA')])),
-      body:SafeArea(child:Column(children:[
-        Padding(padding:const EdgeInsets.fromLTRB(18,10,18,12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          const Text('DESCUBRE SERIES REALES',style:TextStyle(fontSize:21,fontWeight:FontWeight.w900)),
-          const SizedBox(height:5),const Text('Explora series, temporadas y episodios con información en español.',style:TextStyle(color:Colors.white60,fontSize:11)),
-          const SizedBox(height:14),TextField(controller:searchController,textInputAction:TextInputAction.search,onSubmitted:_search,
-            decoration:InputDecoration(hintText:'Buscar una serie...',prefixIcon:const Icon(Icons.search_rounded,color:azul),
-              suffixIcon:IconButton(icon:const Icon(Icons.arrow_forward_rounded,color:azul),onPressed:()=>_search(searchController.text)),
-              filled:true,fillColor:panel,border:OutlineInputBorder(borderRadius:BorderRadius.circular(15),borderSide:BorderSide.none))),
-          const SizedBox(height:8),const Text('Catálogo de series: Trakt',style:TextStyle(color:Colors.white38,fontSize:10)),
-        ])),
-        Expanded(child:loading?const Center(child:CircularProgressIndicator(color:azul)):
-          errorMessage!=null?Center(child:Padding(padding:const EdgeInsets.all(25),child:Column(mainAxisSize:MainAxisSize.min,children:[
-            const Icon(Icons.cloud_off_rounded,color:Colors.white38,size:38),const SizedBox(height:12),
-            Text(errorMessage!,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white60,fontSize:12)),
-            const SizedBox(height:12),OutlinedButton(onPressed:()=>_search(searchController.text),child:const Text('REINTENTAR')),
-          ]))):GridView.builder(padding:const EdgeInsets.fromLTRB(18,4,18,25),itemCount:results.length,
-            gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:13,mainAxisSpacing:17,childAspectRatio:0.62),
-            itemBuilder:(context,index){final series=results[index];return InkWell(borderRadius:BorderRadius.circular(16),onTap:()=>_showDetails(context,series),
-              child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-                Expanded(child:Container(width:double.infinity,decoration:BoxDecoration(borderRadius:BorderRadius.circular(15),border:Border.all(color:morado.withOpacity(0.3))),
-                  child:ClipRRect(borderRadius:BorderRadius.circular(14),child:series.image.isEmpty?Container(color:panel,child:const Icon(Icons.live_tv_rounded,color:morado,size:45)):
-                    CachedNetworkImage(imageUrl:series.image,fit:BoxFit.cover,errorWidget:(_,__,___)=>Container(color:panel,child:const Icon(Icons.live_tv_rounded,color:morado,size:45))))),),
-                const SizedBox(height:8),Text(series.title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:12)),
-                const SizedBox(height:3),Text('${series.genre} · ${series.year}',maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:Colors.white54,fontSize:9)),
-                Text(series.status,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(color:morado,fontSize:9,fontWeight:FontWeight.w700)),
-              ]));}),),
-      ])));
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(title: const Row(children: [Icon(Icons.live_tv_rounded, color: azul), SizedBox(width: 9), Text('SERIES NEXORA')])),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('DESCUBRE SERIES REALES', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                const Text('Busca títulos, consulta temporadas y conoce sus episodios.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: _search,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar una serie...',
+                    prefixIcon: const Icon(Icons.search_rounded, color: azul),
+                    suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward_rounded, color: azul), onPressed: () => _search(searchController.text)),
+                    filled: true,
+                    fillColor: panel,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text('Catálogo de series: TVmaze · tvmaze.com', style: TextStyle(color: Colors.white38, fontSize: 10)),
+              ]),
+            ),
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator(color: azul))
+                  : errorMessage != null
+                      ? Center(child: Padding(padding: const EdgeInsets.all(25), child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.cloud_off_rounded, color: Colors.white38, size: 38),
+                          const SizedBox(height: 12),
+                          Text(errorMessage!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                          const SizedBox(height: 12),
+                          OutlinedButton(onPressed: () => _search(searchController.text), child: const Text('REINTENTAR')),
+                        ])))
+                      : GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(18, 4, 18, 25),
+                          itemCount: results.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 13, mainAxisSpacing: 17, childAspectRatio: 0.62),
+                          itemBuilder: (context, index) {
+                            final series = results[index];
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showDetails(context, series),
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Expanded(child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), border: Border.all(color: morado.withOpacity(0.3))),
+                                  child: ClipRRect(borderRadius: BorderRadius.circular(14), child: series.image.isEmpty
+                                      ? Container(color: panel, child: const Icon(Icons.live_tv_rounded, color: morado, size: 45))
+                                      : Image.network(series.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: panel, child: const Icon(Icons.live_tv_rounded, color: morado, size: 45)))),
+                                )),
+                                const SizedBox(height: 8),
+                                Text(series.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                                const SizedBox(height: 3),
+                                Text('${series.genre} · ${series.year}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 9)),
+                                Text(series.status, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: morado, fontSize: 9, fontWeight: FontWeight.w700)),
+                              ]),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
-}
-
-class SeriesDetailSheet extends StatefulWidget {
-  final SeriesData series;
-  const SeriesDetailSheet({super.key,required this.series});
-  @override
-  State<SeriesDetailSheet> createState()=>_SeriesDetailSheetState();
-}
-
-class _SeriesDetailSheetState extends State<SeriesDetailSheet> {
-  late Future<List<Map<String,dynamic>>> seasonsFuture;
-  int? selectedSeason;
-  Future<List<Map<String,dynamic>>>? episodesFuture;
-  @override
-  void initState(){super.initState();seasonsFuture=loadTraktSeasons(widget.series.id);}
-  void _selectSeason(int number){setState(()=>selectedSeason=number);episodesFuture=loadTraktSeasonEpisodes(widget.series.id,number);}
-
-  @override
-  Widget build(BuildContext context){final series=widget.series;return SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(20,12,20,24),
-    child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Center(child:Container(width:42,height:4,decoration:BoxDecoration(color:Colors.white24,borderRadius:BorderRadius.circular(5)))),
-      const SizedBox(height:18),ClipRRect(borderRadius:BorderRadius.circular(17),child:series.image.isEmpty?Container(height:175,width:double.infinity,color:panel,child:const Icon(Icons.live_tv_rounded,color:azul,size:55)):
-        CachedNetworkImage(imageUrl:series.image,height:175,width:double.infinity,fit:BoxFit.cover,errorWidget:(_,__,___)=>Container(height:175,color:panel,child:const Icon(Icons.live_tv_rounded,color:azul,size:55)))),
-      const SizedBox(height:16),Text(series.title,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w900)),
-      const SizedBox(height:6),Text('${series.genre}  ·  ${series.year}  ·  ${series.status}',style:const TextStyle(color:azul,fontSize:11,fontWeight:FontWeight.w700)),
-      const SizedBox(height:12),Text(series.synopsis,style:const TextStyle(color:Colors.white70,fontSize:13,height:1.5)),
-      const SizedBox(height:18),const Text('TEMPORADAS Y EPISODIOS',style:TextStyle(color:azul,fontSize:11,fontWeight:FontWeight.w900,letterSpacing:1)),
-      const SizedBox(height:9),FutureBuilder<List<Map<String,dynamic>>>(future:seasonsFuture,builder:(context,snapshot){
-        if(snapshot.connectionState==ConnectionState.waiting)return const Padding(padding:EdgeInsets.all(18),child:Center(child:CircularProgressIndicator(color:azul)));
-        if(snapshot.hasError)return const Text('No se pudieron cargar las temporadas.',style:TextStyle(color:Colors.white54,fontSize:12));
-        final seasons=snapshot.data??[];if(seasons.isEmpty)return const Text('No hay temporadas publicadas.',style:TextStyle(color:Colors.white54,fontSize:12));
-        final chosen=selectedSeason??((seasons.first['number'] as num?)?.toInt()??1);
-        if(selectedSeason==null){WidgetsBinding.instance.addPostFrameCallback((_) {if(mounted&&selectedSeason==null)_selectSeason(chosen);});}
-        return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Container(padding:const EdgeInsets.symmetric(horizontal:12),decoration:BoxDecoration(color:panel,borderRadius:BorderRadius.circular(12)),
-            child:DropdownButtonHideUnderline(child:DropdownButton<int>(value:chosen,isExpanded:true,dropdownColor:panel,items:seasons.map((season){final n=(season['number'] as num?)?.toInt()??1;return DropdownMenuItem<int>(value:n,child:Text('Temporada $n'));}).toList(),onChanged:(value){if(value!=null)_selectSeason(value);}))),
-          const SizedBox(height:10),if(episodesFuture!=null)FutureBuilder<List<Map<String,dynamic>>>(future:episodesFuture,builder:(context,episodeSnapshot){
-            if(episodeSnapshot.connectionState==ConnectionState.waiting)return const Padding(padding:EdgeInsets.all(15),child:Center(child:CircularProgressIndicator(color:azul)));
-            if(episodeSnapshot.hasError)return const Text('No se pudieron cargar los episodios.',style:TextStyle(color:Colors.white54,fontSize:12));
-            final episodes=episodeSnapshot.data??[];if(episodes.isEmpty)return const Text('No hay episodios disponibles.',style:TextStyle(color:Colors.white54,fontSize:12));
-            return Column(children:episodes.map((episode){final n=episode['number']??'?';final name=(episode['title_es']??episode['title']??'Episodio $n').toString();final overview=(episode['overview_es']??'').toString();
-              return Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:panel,borderRadius:BorderRadius.circular(12)),
-                child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(children:[const Icon(Icons.play_circle_outline_rounded,color:azul,size:22),const SizedBox(width:9),Expanded(child:Text('Episodio $n · $name',style:const TextStyle(fontSize:11,fontWeight:FontWeight.w800)))]),
-                  if(overview.isNotEmpty)Padding(padding:const EdgeInsets.only(left:31,top:6),child:Text(overview,style:const TextStyle(color:Colors.white54,fontSize:10,height:1.35))) ]));}).toList());}),
-        ]);
-      }),
-      const SizedBox(height:14),SizedBox(width:double.infinity,height:48,child:ElevatedButton.icon(onPressed:(){Navigator.of(context).push(MaterialPageRoute(builder:(_)=>PlayerScreen(title:'${series.title} · Video de prueba')));},
-        icon:const Icon(Icons.play_arrow_rounded),label:const Text('PROBAR REPRODUCTOR',style:TextStyle(fontSize:11,fontWeight:FontWeight.w900)),
-        style:ElevatedButton.styleFrom(backgroundColor:azul,foregroundColor:fondo,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(13))))),
-      const SizedBox(height:8),const Text('Trakt proporciona información del catálogo, no los videos ni los derechos de reproducción. Los títulos y sinopsis se muestran en español cuando existe traducción.',style:TextStyle(color:Colors.white38,fontSize:10,height:1.4)),
-    ]))));}
 }
 
 // INICIO ESTILO PLATAFORMA DE STREAMING
