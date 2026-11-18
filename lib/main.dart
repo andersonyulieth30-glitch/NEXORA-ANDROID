@@ -1452,6 +1452,7 @@ class SeriesPage extends StatelessWidget {
   const SeriesPage({super.key});
 
   void _showDetails(BuildContext context, SeriesData series) {
+    final pageNavigator = Navigator.of(context);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1479,13 +1480,31 @@ class SeriesPage extends StatelessWidget {
               Text('${series.genre}  ·  ${series.year}  ·  ${series.seasons}', style: const TextStyle(color: azul, fontSize: 12, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
               Text(series.synopsis, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
-              const SizedBox(height: 17),
+              const SizedBox(height: 20),
+              const Text('TEMPORADA 1', style: TextStyle(color: azul, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+              const SizedBox(height: 10),
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(13),
-                decoration: BoxDecoration(color: azul.withOpacity(0.08), borderRadius: BorderRadius.circular(13), border: Border.all(color: azul.withOpacity(0.2))),
-                child: const Text('Próximamente: episodios y reproducción con contenido autorizado.', style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.4)),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white12)),
+                child: Row(children: [
+                  Container(width: 54, height: 54, decoration: BoxDecoration(color: morado.withOpacity(0.16), borderRadius: BorderRadius.circular(11)), child: const Icon(Icons.play_circle_fill_rounded, color: azul, size: 32)),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Episodio 1 · Prueba del reproductor', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)), SizedBox(height: 4), Text('Video de demostración', style: TextStyle(color: Colors.white54, fontSize: 10))])),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                ]),
               ),
+              const SizedBox(height: 13),
+              SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
+                onPressed: () {
+                  pageNavigator.pop();
+                  pageNavigator.push(MaterialPageRoute(builder: (_) => PlayerScreen(title: '${series.title} · Episodio 1')));
+                },
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('REPRODUCIR EPISODIO DE PRUEBA', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                style: ElevatedButton.styleFrom(backgroundColor: azul, foregroundColor: fondo, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13))),
+              )),
+              const SizedBox(height: 8),
+              const Text('Este episodio usa un video de demostración. El contenido de catálogo real se conectará con fuentes autorizadas.', style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
             ],
           ),
         ),
@@ -1541,7 +1560,7 @@ class SeriesPage extends StatelessWidget {
               },
             ),
             const SizedBox(height: 18),
-            const Text('Catálogo demostrativo. La reproducción se incorporará cuando contemos con contenido autorizado.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
+            const Text('Catálogo de demostración · Abre una serie para probar su reproductor.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
           ],
         ),
       ),
@@ -2054,7 +2073,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PlayerScreen(movie: widget.movie),
+        builder: (_) => PlayerScreen(title: widget.movie.title),
       ),
     );
   }
@@ -2276,9 +2295,9 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 // REPRODUCTOR
 
 class PlayerScreen extends StatefulWidget {
-  final MovieData movie;
+  final String title;
 
-  const PlayerScreen({super.key, required this.movie});
+  const PlayerScreen({super.key, required this.title});
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -2334,7 +2353,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Text(
-          widget.movie.title,
+          widget.title,
           style: const TextStyle(fontSize: 16),
         ),
       ),
