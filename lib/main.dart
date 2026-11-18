@@ -1474,7 +1474,10 @@ Future<String> translateNexoraText(String text) async {
     final response = await request.close().timeout(const Duration(seconds: 10));
     if (response.statusCode != 200) throw Exception('Translation unavailable');
     final decoded = jsonDecode(await response.transform(utf8.decoder).join());
-    final translated = (decoded is Map ? decoded['responseData']?['translatedText'] : null)?.toString().trim();
+    final responseData = decoded is Map ? decoded['responseData'] : null;
+    final translated = responseData is Map
+        ? responseData['translatedText']?.toString().trim()
+        : null;
     if (translated == null || translated.isEmpty) throw Exception('Empty translation');
     final clean = translated
         .replaceAll('&amp;', '&')
