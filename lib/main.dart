@@ -1291,6 +1291,7 @@ class _AmbientGlow extends StatelessWidget {
 class MovieData {
   final String title;
   final String category;
+  final String year;
   final String description;
   final String duration;
   final String image;
@@ -1298,6 +1299,7 @@ class MovieData {
   const MovieData({
     required this.title,
     required this.category,
+    required this.year,
     required this.description,
     required this.duration,
     required this.image,
@@ -1308,6 +1310,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'Universo desconocido',
     category: 'Ciencia ficción',
+    year: '2025',
     description:
         'Una expedición se adentra en los misterios del universo para descubrir mundos y secretos que cambiarán su destino.',
     duration: '1 h 48 min',
@@ -1317,6 +1320,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'Mundo salvaje',
     category: 'Aventura',
+    year: '2024',
     description:
         'Un viaje por paisajes extraordinarios donde la naturaleza revela toda su fuerza y belleza.',
     duration: '1 h 35 min',
@@ -1326,6 +1330,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'La gran aventura',
     category: 'Acción',
+    year: '2023',
     description:
         'Una aventura llena de desafíos, descubrimientos y decisiones que pondrán a prueba a sus protagonistas.',
     duration: '2 h 05 min',
@@ -1335,6 +1340,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'Más allá del espacio',
     category: 'Fantasía',
+    year: '2025',
     description:
         'Una travesía imaginaria hacia lugares sorprendentes más allá de las estrellas.',
     duration: '1 h 52 min',
@@ -1344,6 +1350,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'Horizonte azul',
     category: 'Drama',
+    year: '2022',
     description:
         'Una historia sobre nuevos comienzos, esperanza y la fuerza para seguir adelante.',
     duration: '1 h 41 min',
@@ -1353,6 +1360,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'Noche estelar',
     category: 'Ciencia ficción',
+    year: '2024',
     description:
         'Un misterio en el espacio lleva a un grupo de exploradores a enfrentar lo desconocido.',
     duration: '1 h 56 min',
@@ -1362,6 +1370,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'El planeta azul',
     category: 'Documental',
+    year: '2023',
     description:
         'Un recorrido visual por algunos de los paisajes más fascinantes de nuestro planeta.',
     duration: '1 h 20 min',
@@ -1371,6 +1380,7 @@ const List<MovieData> movies = [
   MovieData(
     title: 'Camino a la cima',
     category: 'Aventura',
+    year: '2025',
     description:
         'Una aventura de superación en la que cada paso acerca a los protagonistas a su objetivo.',
     duration: '1 h 44 min',
@@ -1802,7 +1812,7 @@ class _MoviesPageState extends State<MoviesPage> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 23, height: 1.05, fontWeight: FontWeight.w900)),
                           const SizedBox(height: 5),
-                          Text('${featured.category}  ·  ${featured.duration}',
+                          Text('${featured.year}  ·  ${featured.category}  ·  ${featured.duration}',
                             style: const TextStyle(color: Colors.white70, fontSize: 11)),
                           const SizedBox(height: 11),
                           Row(children: [
@@ -1992,7 +2002,7 @@ class MoviePoster extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            movie.category,
+            '${movie.year} · ${movie.category}',
             style: const TextStyle(color: azul, fontSize: 10),
           ),
         ],
@@ -2039,6 +2049,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         await favoriteRef.set({
           'title': widget.movie.title,
           'category': widget.movie.category,
+          'year': widget.movie.year,
           'description': widget.movie.description,
           'duration': widget.movie.duration,
           'image': widget.movie.image,
@@ -2163,6 +2174,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
+                      const Icon(Icons.calendar_today_rounded, color: azul, size: 15),
+                      const SizedBox(width: 6),
+                      Text(movie.year, style: const TextStyle(color: Colors.white70)),
+                      const SizedBox(width: 13),
                       const Icon(
                         Icons.access_time_rounded,
                         color: azul,
