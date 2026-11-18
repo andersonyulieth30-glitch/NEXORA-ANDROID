@@ -106,15 +106,19 @@ jobs:
           app = Path("android/app/build.gradle")
           content = app.read_text()
           if "def keystoreProperties = new Properties()" not in content:
-              prefix = """def keystoreProperties = new Properties()
+              properties_block = """
+def keystoreProperties = new Properties()
           def keystorePropertiesFile = rootProject.file('key.properties')
           if (!keystorePropertiesFile.exists()) {
               throw new GradleException('No se encontro android/key.properties')
           }
           keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-
           """
-              content = prefix + content
+              plugins_end = re.search(r'(?m)^\s*}\s*$', content[content.find("plugins {"):])
+              if content.find("plugins {") == -1 or not plugins_end:
+                  raise SystemExit("No se encontro el bloque plugins en android/app/build.gradle")
+              insert_at = content.find("plugins {") + plugins_end.end()
+              content = content[:insert_at] + properties_block + content[insert_at:]
           if "signingConfigs {" not in content:
               signing = """    signingConfigs {
                   release {
