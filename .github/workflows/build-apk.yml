@@ -34,10 +34,8 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           settings = Path("android/settings.gradle")
           wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
-
           content = settings.read_text()
           content = content.replace(
               'id "com.android.application" version "7.3.0"',
@@ -48,30 +46,20 @@ jobs:
               'id "org.jetbrains.kotlin.android" version "1.8.22"'
           )
           settings.write_text(content)
-
           content = wrapper.read_text()
-          content = content.replace(
-              "gradle-7.6.3-all.zip",
-              "gradle-8.0.2-all.zip"
-          )
+          content = content.replace("gradle-7.6.3-all.zip", "gradle-8.0.2-all.zip")
           wrapper.write_text(content)
-
           print("Versiones de Android Gradle Plugin, Kotlin y Gradle actualizadas.")
-          print(settings.read_text())
-          print(wrapper.read_text())
           PY
 
       - name: Configurar Firebase Android
         run: |
           cp google-services.json android/app/google-services.json
-
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           settings = Path("android/settings.gradle")
           app = Path("android/app/build.gradle")
-
           def add_plugin(path, plugin_line):
               content = path.read_text()
               if plugin_line not in content:
@@ -83,50 +71,86 @@ jobs:
                       raise SystemExit(f"No se encontro cierre de plugins en {path}")
                   content = content[:end] + "\n    " + plugin_line + content[end:]
                   path.write_text(content)
-
-          add_plugin(
-              settings,
-              'id "com.google.gms.google-services" version "4.4.2" apply false'
-          )
-
-          add_plugin(
-              app,
-              'id "com.google.gms.google-services"'
-          )
-
+          add_plugin(settings, 'id "com.google.gms.google-services" version "4.4.2" apply false')
+          add_plugin(app, 'id "com.google.gms.google-services"')
           content = app.read_text()
-          content = re.sub(
-              r'minSdkVersion\s*=\s*flutter\.minSdkVersion',
-              'minSdkVersion = 23',
-              content
-          )
-          content = re.sub(
-              r'minSdkVersion\s+flutter\.minSdkVersion',
-              'minSdkVersion 23',
-              content
-          )
-          content = re.sub(
-              r'minSdk\s*=\s*flutter\.minSdkVersion',
-              'minSdk = 23',
-              content
-          )
+          content = re.sub(r'minSdkVersion\s*=\s*flutter\.minSdkVersion', 'minSdkVersion = 23', content)
+          content = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 23', content)
+          content = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 23', content)
           app.write_text(content)
-
           print("Configuracion de Firebase y Android aplicada.")
-          print("Configuracion minSdk:")
-          for line in content.splitlines():
-              if "minSdk" in line:
-                  print(line)
+          PY
+
+      - name: Preparar firma permanente
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -e
+          test -n "$KEYSTORE_BASE64" || (echo "Falta el secreto KEYSTORE_BASE64"; exit 1)
+          test -n "$KEYSTORE_PASSWORD" || (echo "Falta el secreto KEYSTORE_PASSWORD"; exit 1)
+          test -n "$KEY_ALIAS" || (echo "Falta el secreto KEY_ALIAS"; exit 1)
+          test -n "$KEY_PASSWORD" || (echo "Falta el secreto KEY_PASSWORD"; exit 1)
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/nexora-upload-key.jks
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=nexora-upload-key.jks
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          app = Path("android/app/build.gradle")
+          content = app.read_text()
+          if "def keystoreProperties = new Properties()" not in content:
+              prefix = """def keystoreProperties = new Properties()
+          def keystorePropertiesFile = rootProject.file('key.properties')
+          if (!keystorePropertiesFile.exists()) {
+              throw new GradleException('No se encontro android/key.properties')
+          }
+          keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+          """
+              content = prefix + content
+          if "signingConfigs {" not in content:
+              signing = """    signingConfigs {
+                  release {
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                      storeFile file(keystoreProperties['storeFile'])
+                      storePassword keystoreProperties['storePassword']
+                  }
+              }
+
+          """
+              if "    buildTypes {" not in content:
+                  raise SystemExit("No se encontro buildTypes en android/app/build.gradle")
+              content = content.replace("    buildTypes {", signing + "    buildTypes {", 1)
+          content, count = re.subn(
+              r'signingConfig\s*=\s*signingConfigs\.debug|signingConfig\s+signingConfigs\.debug',
+              'signingConfig signingConfigs.release', content
+          )
+          if count == 0 and "signingConfig signingConfigs.release" not in content:
+              match = re.search(r'(buildTypes\s*\{\s*release\s*\{)', content)
+              if not match:
+                  raise SystemExit("No se encontro buildTypes.release para configurar la firma")
+              pos = match.end()
+              content = content[:pos] + "\n            signingConfig signingConfigs.release" + content[pos:]
+          app.write_text(content)
+          print("Firma permanente configurada en Gradle.")
           PY
 
       - name: Instalar dependencias
         run: flutter pub get
 
-      - name: Construir APK
+      - name: Construir APK firmado
         run: flutter build apk --release
 
-      - name: Guardar APK
+      - name: Guardar APK firmado
         uses: actions/upload-artifact@v4
         with:
-          name: NEXORA-APK
+          name: NEXORA-APK-FIRMADO
           path: build/app/outputs/flutter-apk/app-release.apk
