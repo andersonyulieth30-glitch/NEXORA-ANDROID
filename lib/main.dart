@@ -1,5 +1,6 @@
 
 import 'dart:math' as math;
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -1401,70 +1402,154 @@ const List<String> movieGenres = [
   'Documental',
 ];
 
-// SERIES DE DEMOSTRACIÓN
+// CATÁLOGO REAL DE SERIES - TVMAZE (CC BY-SA, CON ATRIBUCIÓN)
 
 class SeriesData {
+  final int id;
   final String title;
   final String genre;
   final String synopsis;
-  final String seasons;
   final String year;
   final String image;
+  final String status;
 
   const SeriesData({
+    required this.id,
     required this.title,
     required this.genre,
     required this.synopsis,
-    required this.seasons,
     required this.year,
     required this.image,
+    required this.status,
   });
+
+  factory SeriesData.fromJson(Map<String, dynamic> json) {
+    final premiered = (json['premiered'] ?? '').toString();
+    final imageData = json['image'] is Map ? json['image'] as Map : null;
+    final genresData = json['genres'];
+    final genres = genresData is List
+        ? genresData.map((item) => item.toString()).where((item) => item.isNotEmpty).join(' · ')
+        : '';
+    final rawSummary = (json['summary'] ?? 'Sin sinopsis disponible.').toString();
+    final cleanSummary = rawSummary
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .trim();
+
+    return SeriesData(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: (json['name'] ?? 'Serie sin título').toString(),
+      genre: genres.isEmpty ? 'Series' : genres,
+      synopsis: cleanSummary.isEmpty ? 'Sin sinopsis disponible.' : cleanSummary,
+      year: premiered.length >= 4 ? premiered.substring(0, 4) : 'Año no disponible',
+      image: (imageData?['original'] ?? imageData?['medium'] ?? '').toString(),
+      status: (json['status'] ?? 'Información no disponible').toString(),
+    );
+  }
 }
 
-const List<SeriesData> nexoraSeries = [
-  SeriesData(
-    title: 'Código desconocido', genre: 'Ciencia ficción', year: '2025',
-    seasons: '1 temporada',
-    synopsis: 'Un grupo de jóvenes descubre una señal escondida en una red digital y comienza a investigar un misterio que conecta varios lugares del mundo.',
-    image: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=900',
-  ),
-  SeriesData(
-    title: 'Rutas salvajes', genre: 'Aventura', year: '2024',
-    seasons: '2 temporadas',
-    synopsis: 'Exploradores recorren territorios sorprendentes y se enfrentan a retos que ponen a prueba su ingenio y trabajo en equipo.',
-    image: 'https://images.unsplash.com/photo-1472396961693-142e6e269027?w=900',
-  ),
-  SeriesData(
-    title: 'Mentes brillantes', genre: 'Drama', year: '2025',
-    seasons: '1 temporada',
-    synopsis: 'Un equipo de investigadores une sus talentos para resolver problemas que parecen no tener explicación.',
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=900',
-  ),
-  SeriesData(
-    title: 'Planeta vivo', genre: 'Documental', year: '2023',
-    seasons: '3 temporadas',
-    synopsis: 'Un recorrido por ecosistemas extraordinarios, especies fascinantes y los desafíos de conservar nuestro planeta.',
-    image: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=900',
-  ),
-  SeriesData(
-    title: 'Más allá del tiempo', genre: 'Fantasía', year: '2024',
-    seasons: '2 temporadas',
-    synopsis: 'Una antigua reliquia abre caminos hacia otras épocas y cambia para siempre la vida de quienes la encuentran.',
-    image: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=900',
-  ),
-  SeriesData(
-    title: 'Zona de riesgo', genre: 'Acción', year: '2025',
-    seasons: '1 temporada',
-    synopsis: 'Un equipo especializado debe superar misiones difíciles mientras descubre quién está detrás de una amenaza inesperada.',
-    image: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=900',
-  ),
-];
+Future<List<SeriesData>> searchTvMazeShows(String query) async {
+  final client = HttpClient();
+  try {
+    final uri = Uri.https('api.tvmaze.com', '/search/shows', {'q': query});
+    final request = await client.getUrl(uri).timeout(const Duration(seconds: 15));
+    request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
+    final response = await request.close().timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('No fue posible consultar el catálogo (${response.statusCode}).');
+    }
+    final body = await response.transform(utf8.decoder).join();
+    final decoded = jsonDecode(body);
+    if (decoded is! List) return [];
+    return decoded
+        .where((item) => item is Map && item['show'] is Map)
+        .map((item) => SeriesData.fromJson(Map<String, dynamic>.from(item['show'] as Map)))
+        .where((show) => show.id > 0)
+        .toList();
+  } finally {
+    client.close(force: true);
+  }
+}
 
-class SeriesPage extends StatelessWidget {
+Future<List<Map<String, dynamic>>> loadTvMazeEpisodes(int showId) async {
+  final client = HttpClient();
+  try {
+    final uri = Uri.https('api.tvmaze.com', '/shows/$showId/episodes');
+    final request = await client.getUrl(uri).timeout(const Duration(seconds: 15));
+    request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
+    final response = await request.close().timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('No fue posible cargar los episodios.');
+    }
+    final body = await response.transform(utf8.decoder).join();
+    final decoded = jsonDecode(body);
+    if (decoded is! List) return [];
+    return decoded.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+  } finally {
+    client.close(force: true);
+  }
+}
+
+class SeriesPage extends StatefulWidget {
   const SeriesPage({super.key});
 
+  @override
+  State<SeriesPage> createState() => _SeriesPageState();
+}
+
+class _SeriesPageState extends State<SeriesPage> {
+  final TextEditingController searchController = TextEditingController(text: 'the');
+  List<SeriesData> results = [];
+  bool loading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _search('the');
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search(String query) async {
+    final term = query.trim();
+    if (term.isEmpty) {
+      setState(() {
+        results = [];
+        loading = false;
+        errorMessage = 'Escribe el nombre de una serie para buscar.';
+      });
+      return;
+    }
+    setState(() {
+      loading = true;
+      errorMessage = null;
+    });
+    try {
+      final found = await searchTvMazeShows(term);
+      if (!mounted) return;
+      setState(() {
+        results = found;
+        loading = false;
+        if (found.isEmpty) errorMessage = 'No encontramos series con esa búsqueda.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+        errorMessage = 'No se pudo conectar al catálogo. Revisa tu internet e inténtalo de nuevo.';
+      });
+    }
+  }
+
   void _showDetails(BuildContext context, SeriesData series) {
-    final pageNavigator = Navigator.of(context);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1472,52 +1557,78 @@ class SeriesPage extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(5)))),
-              const SizedBox(height: 18),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(17),
-                child: Image.network(series.image, height: 175, width: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(height: 175, color: panel, child: const Icon(Icons.live_tv_rounded, color: azul, size: 55))),
-              ),
-              const SizedBox(height: 16),
-              Text(series.title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 6),
-              Text('${series.genre}  ·  ${series.year}  ·  ${series.seasons}', style: const TextStyle(color: azul, fontSize: 12, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 12),
-              Text(series.synopsis, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
-              const SizedBox(height: 20),
-              const Text('TEMPORADA 1', style: TextStyle(color: azul, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white12)),
-                child: Row(children: [
-                  Container(width: 54, height: 54, decoration: BoxDecoration(color: morado.withOpacity(0.16), borderRadius: BorderRadius.circular(11)), child: const Icon(Icons.play_circle_fill_rounded, color: azul, size: 32)),
-                  const SizedBox(width: 12),
-                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Episodio 1 · Prueba del reproductor', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)), SizedBox(height: 4), Text('Video de demostración', style: TextStyle(color: Colors.white54, fontSize: 10))])),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.white54),
-                ]),
-              ),
-              const SizedBox(height: 13),
-              SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
-                onPressed: () {
-                  pageNavigator.pop();
-                  pageNavigator.push(MaterialPageRoute(builder: (_) => PlayerScreen(title: '${series.title} · Episodio 1')));
-                },
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('REPRODUCIR EPISODIO DE PRUEBA', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-                style: ElevatedButton.styleFrom(backgroundColor: azul, foregroundColor: fondo, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13))),
-              )),
-              const SizedBox(height: 8),
-              const Text('Este episodio usa un video de demostración. El contenido de catálogo real se conectará con fuentes autorizadas.', style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
-            ],
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(5)))),
+                const SizedBox(height: 18),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(17),
+                  child: series.image.isEmpty
+                      ? Container(height: 175, width: double.infinity, color: panel, child: const Icon(Icons.live_tv_rounded, color: azul, size: 55))
+                      : Image.network(series.image, height: 175, width: double.infinity, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(height: 175, color: panel, child: const Icon(Icons.live_tv_rounded, color: azul, size: 55))),
+                ),
+                const SizedBox(height: 16),
+                Text(series.title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                Text('${series.genre}  ·  ${series.year}  ·  ${series.status}', style: const TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                Text(series.synopsis, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
+                const SizedBox(height: 18),
+                const Text('EPISODIOS DISPONIBLES EN TVMAZE', style: TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                const SizedBox(height: 9),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: loadTvMazeEpisodes(series.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator(color: azul)));
+                    }
+                    if (snapshot.hasError) {
+                      return const Text('No se pudieron cargar los episodios.', style: TextStyle(color: Colors.white54, fontSize: 12));
+                    }
+                    final episodes = snapshot.data ?? [];
+                    if (episodes.isEmpty) {
+                      return const Text('No hay episodios publicados en el catálogo.', style: TextStyle(color: Colors.white54, fontSize: 12));
+                    }
+                    return Column(
+                      children: episodes.take(12).map((episode) {
+                        final season = episode['season'] ?? '?';
+                        final number = episode['number'] ?? '?';
+                        final name = (episode['name'] ?? 'Episodio').toString();
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 7),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12)),
+                          child: Row(children: [
+                            const Icon(Icons.play_circle_outline_rounded, color: azul, size: 23),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text('T$season · E$number  —  $name', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+                          ]),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => PlayerScreen(title: '${series.title} · Video de prueba')));
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('PROBAR REPRODUCTOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                  style: ElevatedButton.styleFrom(backgroundColor: azul, foregroundColor: fondo, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13))),
+                )),
+                const SizedBox(height: 8),
+                const Text('Los datos de series y episodios provienen de TVmaze. El botón reproduce un video de demostración; TVmaze no proporciona videos ni derechos de reproducción.', style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
+              ],
+            ),
           ),
         ),
       ),
@@ -1530,49 +1641,70 @@ class SeriesPage extends StatelessWidget {
       backgroundColor: fondo,
       appBar: AppBar(title: const Row(children: [Icon(Icons.live_tv_rounded, color: azul), SizedBox(width: 9), Text('SERIES NEXORA')])),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
+        child: Column(
           children: [
-            const Text('HISTORIAS QUE CONTINÚAN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 6),
-            const Text('Explora nuevas historias y descubre sus detalles.', style: TextStyle(color: Colors.white60, fontSize: 12)),
-            const SizedBox(height: 20),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: nexoraSeries.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 13, mainAxisSpacing: 18, childAspectRatio: 0.62),
-              itemBuilder: (context, index) {
-                final series = nexoraSeries[index];
-                return InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => _showDetails(context, series),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), border: Border.all(color: morado.withOpacity(0.3))),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Stack(fit: StackFit.expand, children: [
-                            Image.network(series.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: panel, child: const Icon(Icons.live_tv_rounded, color: morado, size: 45))),
-                            const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Color(0x99050817)]))),
-                            const Positioned(right: 8, top: 8, child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 27)),
-                          ]),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(series.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                    const SizedBox(height: 3),
-                    Text('${series.genre} · ${series.year}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10)),
-                    Text(series.seasons, style: const TextStyle(color: morado, fontSize: 10, fontWeight: FontWeight.w700)),
-                  ]),
-                );
-              },
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('DESCUBRE SERIES REALES', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                const Text('Busca títulos, consulta temporadas y conoce sus episodios.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: _search,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar una serie...',
+                    prefixIcon: const Icon(Icons.search_rounded, color: azul),
+                    suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward_rounded, color: azul), onPressed: () => _search(searchController.text)),
+                    filled: true,
+                    fillColor: panel,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text('Catálogo de series: TVmaze · tvmaze.com', style: TextStyle(color: Colors.white38, fontSize: 10)),
+              ]),
             ),
-            const SizedBox(height: 18),
-            const Text('Catálogo de series · La reproducción real requiere fuentes autorizadas.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator(color: azul))
+                  : errorMessage != null
+                      ? Center(child: Padding(padding: const EdgeInsets.all(25), child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.cloud_off_rounded, color: Colors.white38, size: 38),
+                          const SizedBox(height: 12),
+                          Text(errorMessage!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                          const SizedBox(height: 12),
+                          OutlinedButton(onPressed: () => _search(searchController.text), child: const Text('REINTENTAR')),
+                        ])))
+                      : GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(18, 4, 18, 25),
+                          itemCount: results.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 13, mainAxisSpacing: 17, childAspectRatio: 0.62),
+                          itemBuilder: (context, index) {
+                            final series = results[index];
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showDetails(context, series),
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Expanded(child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), border: Border.all(color: morado.withOpacity(0.3))),
+                                  child: ClipRRect(borderRadius: BorderRadius.circular(14), child: series.image.isEmpty
+                                      ? Container(color: panel, child: const Icon(Icons.live_tv_rounded, color: morado, size: 45))
+                                      : Image.network(series.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: panel, child: const Icon(Icons.live_tv_rounded, color: morado, size: 45)))),
+                                )),
+                                const SizedBox(height: 8),
+                                Text(series.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                                const SizedBox(height: 3),
+                                Text('${series.genre} · ${series.year}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 9)),
+                                Text(series.status, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: morado, fontSize: 9, fontWeight: FontWeight.w700)),
+                              ]),
+                            );
+                          },
+                        ),
+            ),
           ],
         ),
       ),
