@@ -1913,6 +1913,42 @@ class HomePage extends StatelessWidget {
               const SizedBox(width: 9),
               const Text('NEXORA', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2.4, shadows: [Shadow(color: azul, blurRadius: 12)])),
               const Spacer(),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser?.uid ?? 'none')
+                    .collection('notifications')
+                    .where('read', isEqualTo: false)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data?.docs.length ?? 0;
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        tooltip: 'Notificaciones',
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                        ),
+                        icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26),
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          right: 7,
+                          top: 6,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(color: Color(0xFFFF4D78), shape: BoxShape.circle),
+                            constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                            child: Text(count > 9 ? '9+' : '$count', textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
               IconButton(
                 tooltip: 'Buscar contenido',
                 onPressed: () => openMovies(context),
@@ -3808,6 +3844,118 @@ class LibraryPage extends StatelessWidget {
                   ),
                 ),
             ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// CENTRO DE NOTIFICACIONES
+
+class NotificationsPage extends StatelessWidget {
+  const NotificationsPage({super.key});
+
+  CollectionReference<Map<String, dynamic>> get _notifications {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid ?? 'none')
+        .collection('notifications');
+  }
+
+  Future<void> _markAllRead(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
+    final batch = FirebaseFirestore.instance.batch();
+    for (final doc in docs) {
+      if (doc.data()['read'] != true) {
+        batch.update(doc.reference, {'read': true});
+      }
+    }
+    await batch.commit();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(
+        title: const Text('NOTIFICACIONES'),
+        actions: [
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: _notifications.orderBy('createdAt', descending: true).snapshots(),
+            builder: (context, snapshot) {
+              final docs = snapshot.data?.docs ?? [];
+              if (!docs.any((d) => d.data()['read'] != true)) return const SizedBox.shrink();
+              return TextButton(
+                onPressed: () => _markAllRead(docs),
+                child: const Text('LEER TODO', style: TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w900)),
+              );
+            },
+          ),
+        ],
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _notifications.orderBy('createdAt', descending: true).limit(50).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('No se pudieron cargar las notificaciones.', style: TextStyle(color: Colors.white60)));
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: azul));
+          }
+          final docs = snapshot.data?.docs ?? [];
+          if (docs.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(30),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Container(width: 86, height: 86, decoration: BoxDecoration(color: azul.withOpacity(0.10), shape: BoxShape.circle),
+                    child: const Icon(Icons.notifications_off_outlined, color: azul, size: 42)),
+                  const SizedBox(height: 18),
+                  const Text('TODO AL DÍA', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                  const SizedBox(height: 8),
+                  const Text('Aquí aparecerán las novedades y avisos de NEXORA.', textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white54, height: 1.5)),
+                ]),
+              ),
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data();
+              final title = (data['title'] ?? 'Novedad de NEXORA').toString();
+              final message = (data['message'] ?? '').toString();
+              final read = data['read'] == true;
+              final createdAt = data['createdAt'];
+              final date = createdAt is Timestamp ? createdAt.toDate() : null;
+              return InkWell(
+                borderRadius: BorderRadius.circular(17),
+                onTap: () { if (!read) doc.reference.update({'read': true}); },
+                child: Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: panel,
+                    borderRadius: BorderRadius.circular(17),
+                    border: Border.all(color: read ? Colors.white.withOpacity(0.06) : azul.withOpacity(0.35)),
+                  ),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(width: 40, height: 40, decoration: BoxDecoration(color: azul.withOpacity(0.10), borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.campaign_rounded, color: azul)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                      if (message.isNotEmpty) ...[const SizedBox(height: 5), Text(message, style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4))],
+                      if (date != null) ...[const SizedBox(height: 7), Text('${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}', style: const TextStyle(color: Colors.white38, fontSize: 10))],
+                    ])),
+                    if (!read) Container(width: 8, height: 8, margin: const EdgeInsets.only(top: 5), decoration: const BoxDecoration(color: azul, shape: BoxShape.circle)),
+                  ]),
+                ),
+              );
+            },
           );
         },
       ),
