@@ -87,18 +87,16 @@ jobs:
           app = Path('android/app/build.gradle')
           text = app.read_text()
 
-          def block_bounds(source, pattern, description):
+          def find_block(source, pattern, label):
               match = re.search(pattern, source, re.M)
               if not match:
-                  raise SystemExit(f'No se encontro el bloque {description}')
-              opening = source.find('{', match.start(), match.end() + 1)
-              if opening < 0:
-                  raise SystemExit(f'No se encontro la llave de apertura de {description}')
+                  raise SystemExit(f'No se encontro el bloque {label}')
+              opening = source.find('{', match.start(), match.end())
               depth = 0
               quote = None
               escaped = False
-              for i in range(opening, len(source)):
-                  ch = source[i]
+              for pos in range(opening, len(source)):
+                  ch = source[pos]
                   if quote:
                       if escaped:
                           escaped = False
@@ -114,9 +112,15 @@ jobs:
                   elif ch == '}':
                       depth -= 1
                       if depth == 0:
-                          return match.start(), opening, i + 1
-              raise SystemExit(f'Bloque {description} sin cierre')
+                          return match.start(), opening, pos + 1
+              raise SystemExit(f'El bloque {label} no tiene cierre')
 
+          # Quitar una posible configuracion anterior de propiedades.
+          text = re.sub(
+              r"(?s)def keystoreProperties = new Properties\(\).*?keystoreProperties\.load\(new FileInputStream\(keystorePropertiesFile\)\)\s*",
+              '',
+              text
+          )
           props = """def keystoreProperties = new Properties()
           def keystorePropertiesFile = rootProject.file('key.properties')
           if (!keystorePropertiesFile.exists()) {
@@ -124,34 +128,22 @@ jobs:
           }
           keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
           """
-          # Asegurar que las propiedades se carguen una sola vez, antes de android.
-          text = re.sub(
-              r'(?s)def keystoreProperties = new Properties\(\).*?keystoreProperties\.load\(new FileInputStream\(keystorePropertiesFile\)\)\s*',
-              '',
-              text
-          )
           android_match = re.search(r'(?m)^android\s*\{', text)
           if not android_match:
               raise SystemExit('No se encontro el bloque android')
           text = text[:android_match.start()] + props + '\n' + text[android_match.start():]
 
-          # Reemplazar por completo signingConfigs para evitar que Gradle use debug.
+          # Eliminar signingConfigs existente, si lo hay.
           try:
-              start, opening, end = block_bounds(text, r'(?m)^\s*signingConfigs\s*\{', 'signingConfigs')
-              signing_block = """signingConfigs {
-                  release {
-                      keyAlias keystoreProperties['keyAlias']
-                      keyPassword keystoreProperties['keyPassword']
-                      storeFile file(keystoreProperties['storeFile'])
-                      storePassword keystoreProperties['storePassword']
-                  }
-              }"""
-              text = text[:start] + signing_block + text[end:]
+              begin, _, finish = find_block(text, r'(?m)^\s*signingConfigs\s*\{', 'signingConfigs')
+              text = text[:begin] + text[finish:]
           except SystemExit as exc:
               if 'No se encontro el bloque signingConfigs' not in str(exc):
                   raise
-              _, android_open, _ = block_bounds(text, r'(?m)^android\s*\{', 'android')
-              text = text[:android_open + 1] + """
+
+          # Insertar la llave permanente dentro de android.
+          _, android_open, _ = find_block(text, r'(?m)^android\s*\{', 'android')
+          signing = """
               signingConfigs {
                   release {
                       keyAlias keystoreProperties['keyAlias']
@@ -160,35 +152,29 @@ jobs:
                       storePassword keystoreProperties['storePassword']
                   }
               }
-              """ + text[android_open + 1:]
+          """
+          text = text[:android_open + 1] + signing + text[android_open + 1:]
 
-          # Forzar release a usar la firma permanente, sin tocar debug.
-          bt_start, bt_open, bt_end = block_bounds(text, r'(?m)^\s*buildTypes\s*\{', 'buildTypes')
-          bt_text = text[bt_open + 1:bt_end - 1]
-          rel = re.search(r'(?m)^\s*release\s*\{', bt_text)
-          if not rel:
+          # Reemplazar todo buildTypes.release por un bloque inequívoco.
+          _, bt_open, bt_end = find_block(text, r'(?m)^\s*buildTypes\s*\{', 'buildTypes')
+          bt_content = text[bt_open + 1:bt_end - 1]
+          release_match = re.search(r'(?m)^\s*release\s*\{', bt_content)
+          if not release_match:
               raise SystemExit('No se encontro buildTypes.release')
-          rel_open = bt_open + 1 + bt_text.find('{', rel.start(), rel.end() + 1)
-          depth = 0
-          rel_end = None
-          for i in range(rel_open, bt_end):
-              if text[i] == '{':
-                  depth += 1
-              elif text[i] == '}':
-                  depth -= 1
-                  if depth == 0:
-                      rel_end = i + 1
-                      break
-          if rel_end is None:
-              raise SystemExit('El bloque release no tiene cierre')
-          release_body = text[rel_open + 1:rel_end - 1]
-          release_body = re.sub(r'(?m)^\\s*signingConfig\\s+signingConfigs\\.[A-Za-z0-9_]+\\s*;?\\s*$', '', release_body)
-          release_body = '\\n            signingConfig signingConfigs.release\\n' + release_body
-          text = text[:rel_open + 1] + release_body + text[rel_end - 1:]
+          release_start = bt_open + 1 + release_match.start()
+          _, _, release_relative_end = find_block(
+              text[release_start:bt_end - 1],
+              r'(?m)^\s*release\s*\{',
+              'buildTypes.release'
+          )
+          release_end = release_start + release_relative_end
+          release_block = """            release {
+                          signingConfig signingConfigs.release
+                      }"""
+          text = text[:release_start] + release_block + text[release_end:]
 
           app.write_text(text)
-          print('Firma release configurada explicitamente con la llave permanente.')
-          print('Se verificara que el APK use exactamente el mismo certificado.')
+          print('Firma release configurada con la llave permanente.')
           PY
 
       - name: Obtener huella de la llave permanente
