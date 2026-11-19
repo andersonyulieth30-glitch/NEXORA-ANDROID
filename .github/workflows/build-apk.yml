@@ -159,7 +159,15 @@ jobs:
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$APKSIGNER" || { echo 'No se encontro apksigner'; exit 1; }
           "$APKSIGNER" verify --print-certs "$APK" > /tmp/nexora-apk-cert.txt
-          HUELLA_APK="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' /tmp/nexora-apk-cert.txt | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          # Extraer los 40 caracteres hexadecimales sin depender del formato
+          # exacto del texto que imprime apksigner.
+          HUELLA_APK="$(grep -i 'SHA-1' /tmp/nexora-apk-cert.txt | grep -oE '[0-9A-Fa-f]{40}' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          if [ -z "$HUELLA_APK" ]; then
+            echo 'No se pudo extraer la huella SHA-1 del certificado de la APK.'
+            echo 'Salida de apksigner:'
+            cat /tmp/nexora-apk-cert.txt
+            exit 1
+          fi
           echo "Huella SHA-1 de la APK: $HUELLA_APK"
           if [ -z "$HUELLA_APK" ] || [ "$HUELLA_APK" != "$HUELLA_LLAVE" ]; then
             echo 'ERROR: Gradle no firmo la APK con la llave permanente configurada.'
