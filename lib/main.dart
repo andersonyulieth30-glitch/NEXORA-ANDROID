@@ -1445,6 +1445,27 @@ Future<void> saveNexoraFavorite({
   }
 }
 
+// REGISTRO DE HISTORIAL POR USUARIO
+Future<void> saveNexoraHistory({
+  required String title,
+  required String type,
+  String image = '',
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null || title.trim().isEmpty) return;
+  try {
+    final id = '${type}_${title.trim().toLowerCase().hashCode}';
+    await FirebaseFirestore.instance
+        .collection('users').doc(user.uid).collection('watch_history')
+        .doc(id).set({
+      'title': title,
+      'type': type,
+      'image': image,
+      'watchedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  } catch (_) {}
+}
+
 // CATÁLOGO REAL DE SERIES - TVMAZE (CC BY-SA, CON ATRIBUCIÓN)
 
 class SeriesData {
@@ -1782,7 +1803,7 @@ class _SeriesPageState extends State<SeriesPage> {
                 SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(sheetContext).pop();
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => PlayerScreen(title: '${series.title} · Video de prueba')));
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => PlayerScreen(title: '${series.title} · Video de prueba', type: 'series')));
                   },
                   icon: const Icon(Icons.play_arrow_rounded),
                   label: const Text('PROBAR REPRODUCTOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
@@ -2765,7 +2786,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PlayerScreen(title: widget.movie.title),
+        builder: (_) => PlayerScreen(title: widget.movie.title, type: 'movie', image: widget.movie.image),
       ),
     );
   }
@@ -2993,8 +3014,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 
 class PlayerScreen extends StatefulWidget {
   final String title;
+  final String type;
+  final String image;
 
-  const PlayerScreen({super.key, required this.title});
+  const PlayerScreen({super.key, required this.title, this.type = 'movie', this.image = ''});
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -3008,6 +3031,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void initState() {
     super.initState();
+    saveNexoraHistory(title: widget.title, type: widget.type, image: widget.image);
     controller = VideoPlayerController.networkUrl(
       Uri.parse(
         'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
@@ -3733,6 +3757,11 @@ class LibraryPage extends StatelessWidget {
                             ],
                           ),
                         ),
+                        IconButton(
+                          tooltip: 'Ver historial',
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage())),
+                          icon: const Icon(Icons.history_rounded, color: azul, size: 27),
+                        ),
                       ],
                     ),
                   ),
@@ -3844,6 +3873,50 @@ class LibraryPage extends StatelessWidget {
                   ),
                 ),
             ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// HISTORIAL Y CONTINUAR VIENDO
+class HistoryPage extends StatelessWidget {
+  const HistoryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SimplePage(icon: Icons.history, title: 'HISTORIAL', message: 'Inicia sesión para ver tu historial.');
+    final stream = FirebaseFirestore.instance.collection('users').doc(user.uid)
+        .collection('watch_history').orderBy('watchedAt', descending: true).snapshots();
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(title: const Text('HISTORIAL')),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: stream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: azul));
+          if (snapshot.hasError) return const Center(child: Text('No se pudo cargar el historial.', style: TextStyle(color: Colors.white70)));
+          final docs = snapshot.data?.docs ?? [];
+          if (docs.isEmpty) return const Center(child: Text('Todavía no has reproducido contenido.', style: TextStyle(color: Colors.white60)));
+          return ListView.builder(
+            padding: const EdgeInsets.all(16), itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index]; final data = doc.data();
+              final title = data['title'] as String? ?? 'Contenido';
+              final type = data['type'] as String? ?? 'movie';
+              final image = data['image'] as String? ?? '';
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: azul.withOpacity(.15))),
+                child: Row(children: [
+                  ClipRRect(borderRadius: BorderRadius.circular(10), child: SizedBox(width: 58, height: 76, child: image.isEmpty ? Container(color: fondo, child: Icon(type == 'tv' ? Icons.live_tv : Icons.movie, color: azul)) : CachedNetworkImage(imageUrl: image, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: fondo, child: const Icon(Icons.movie, color: azul)))),),
+                  const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)), const SizedBox(height: 5), Text(type == 'tv' ? 'CANAL DE TV' : type == 'series' ? 'SERIE' : type == 'anime' ? 'ANIME' : 'PELÍCULA', style: const TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w800))])),
+                  IconButton(tooltip: 'Quitar del historial', onPressed: () => doc.reference.delete(), icon: const Icon(Icons.delete_outline, color: Colors.white54)),
+                ]),
+              );
+            },
           );
         },
       ),
@@ -4707,6 +4780,9 @@ class _LiveChannelPlayerPageState extends State<LiveChannelPlayerPage> {
   }
 
   Future<void> _startStream() async {
+    if (widget.channel.hasStream) {
+      saveNexoraHistory(title: widget.channel.name, type: 'tv');
+    }
     if (!widget.channel.hasStream) {
       if (mounted) setState(() { loading = false; hasError = true; });
       return;
