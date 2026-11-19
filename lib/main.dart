@@ -1922,6 +1922,8 @@ class HomePage extends StatelessWidget {
                     openMovies(context);
                   } else if (item.name == 'Series') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const SeriesPage()));
+                  } else if (item.name == 'TV en vivo') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveTvPage()));
                   } else {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryPage(title: item.name)));
                   }
@@ -2901,6 +2903,7 @@ class ExplorePage extends StatelessWidget {
     final options = [
       _ExploreOption('Películas', 'Historias para cada momento', Icons.movie_creation_rounded, azul, true),
       _ExploreOption('Series', 'Descubre historias y temporadas', Icons.live_tv_rounded, morado, true, series: true),
+      _ExploreOption('TV en vivo', 'Canales públicos en directo', Icons.tv_rounded, const Color(0xFF45D6C5), true, liveTv: true),
       _ExploreOption('Deportes', 'Muy pronto: vive la emoción', Icons.sports_soccer_rounded, const Color(0xFFFFB454), false),
       _ExploreOption('Documentales', 'Muy pronto: descubre el mundo', Icons.public_rounded, const Color(0xFF65D6A5), false),
       _ExploreOption('Música', 'Muy pronto: siente el ritmo', Icons.headphones_rounded, const Color(0xFFFF76B7), false),
@@ -3000,8 +3003,9 @@ class _ExploreOption {
   final Color color;
   final bool available;
   final bool series;
+  final bool liveTv;
 
-  const _ExploreOption(this.title, this.subtitle, this.icon, this.color, this.available, {this.series = false});
+  const _ExploreOption(this.title, this.subtitle, this.icon, this.color, this.available, {this.series = false, this.liveTv = false});
 }
 
 class _ExploreTile extends StatelessWidget {
@@ -3014,7 +3018,9 @@ class _ExploreTile extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(21),
       onTap: () {
-        if (option.available && option.series) {
+        if (option.liveTv) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveTvPage()));
+        } else if (option.available && option.series) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const SeriesPage()));
         } else if (option.available) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const MoviesPage()));
@@ -3510,6 +3516,378 @@ class ProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: 23),
           const Center(child: Text('NEXORA  •  TU MUNDO, TU ENTRETENIMIENTO', style: TextStyle(color: Colors.white30, fontSize: 9, letterSpacing: 0.8))),
+        ],
+      ),
+    );
+  }
+}
+
+// TELEVISIÓN EN VIVO
+// Señales públicas cuya transmisión en línea es ofrecida por RTVC.
+class LiveChannel {
+  final String name;
+  final String description;
+  final String streamUrl;
+  final String officialUrl;
+  final IconData icon;
+
+  const LiveChannel({
+    required this.name,
+    required this.description,
+    required this.streamUrl,
+    required this.officialUrl,
+    required this.icon,
+  });
+}
+
+const List<LiveChannel> liveChannels = [
+  LiveChannel(
+    name: 'Señal Colombia',
+    description: 'Cultura, documentales y entretenimiento colombiano',
+    streamUrl:
+        'https://streaming.rtvc.gov.co/TV_Senal_Colombia_live/smil:live.smil/playlist.m3u8',
+    officialUrl: 'https://www.senalcolombia.tv/senal-en-vivo',
+    icon: Icons.public_rounded,
+  ),
+  LiveChannel(
+    name: 'Canal Institucional',
+    description: 'Información pública y contenidos institucionales',
+    streamUrl:
+        'https://streaming.rtvc.gov.co/TV_CanalInstitucional_live/smil:live.smil/playlist.m3u8',
+    officialUrl: 'https://www.rtvcplay.co/en-vivo/canal-institucional',
+    icon: Icons.account_balance_rounded,
+  ),
+];
+
+class LiveTvPage extends StatelessWidget {
+  const LiveTvPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(
+        title: const Text('TV EN VIVO'),
+        backgroundColor: fondo,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(19),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF17446A), Color(0xFF30205D), panel],
+              ),
+              border: Border.all(color: azul.withOpacity(0.35)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.sensors_rounded, color: Color(0xFFFF5C70), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'TRANSMISIÓN EN DIRECTO',
+                      style: TextStyle(
+                        color: azul,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Televisión para descubrir.',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+                SizedBox(height: 7),
+                Text(
+                  'Disfruta señales públicas disponibles en internet. La disponibilidad depende de cada emisora.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.45),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'CANALES DISPONIBLES',
+            style: TextStyle(
+              color: azul,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...liveChannels.map(
+            (channel) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Material(
+                color: panel,
+                borderRadius: BorderRadius.circular(18),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LiveChannelPlayerPage(channel: channel),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: azul.withOpacity(0.20)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF164A70), Color(0xFF39215D)],
+                            ),
+                          ),
+                          child: Icon(channel.icon, color: azul, size: 29),
+                        ),
+                        const SizedBox(width: 13),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                channel.name,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                channel.description,
+                                style: const TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 10,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              const Row(
+                                children: [
+                                  Icon(Icons.circle, color: Color(0xFFFF5C70), size: 7),
+                                  SizedBox(width: 5),
+                                  Text(
+                                    'SEÑAL EN VIVO',
+                                    style: TextStyle(
+                                      color: Color(0xFFFF8290),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.7,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.play_circle_fill_rounded, color: azul, size: 31),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'NEXORA incluye señales públicas. Los canales y sus transmisiones pertenecen a sus respectivos titulares.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.45),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LiveChannelPlayerPage extends StatefulWidget {
+  final LiveChannel channel;
+
+  const LiveChannelPlayerPage({super.key, required this.channel});
+
+  @override
+  State<LiveChannelPlayerPage> createState() => _LiveChannelPlayerPageState();
+}
+
+class _LiveChannelPlayerPageState extends State<LiveChannelPlayerPage> {
+  VideoPlayerController? controller;
+  bool loading = true;
+  bool hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startStream();
+  }
+
+  Future<void> _startStream() async {
+    final oldController = controller;
+    controller = null;
+    await oldController?.dispose();
+
+    if (!mounted) return;
+    setState(() {
+      loading = true;
+      hasError = false;
+    });
+
+    final nextController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.channel.streamUrl),
+    );
+    controller = nextController;
+
+    try {
+      await nextController.initialize().timeout(const Duration(seconds: 25));
+      if (!mounted || controller != nextController) {
+        await nextController.dispose();
+        return;
+      }
+      await nextController.setLooping(false);
+      await nextController.play();
+      if (mounted) setState(() => loading = false);
+    } catch (_) {
+      await nextController.dispose();
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+        hasError = true;
+        if (controller == nextController) controller = null;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentController = controller;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text(widget.channel.name, style: const TextStyle(fontSize: 16)),
+      ),
+      body: ListView(
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Container(
+              color: const Color(0xFF080D18),
+              alignment: Alignment.center,
+              child: loading
+                  ? const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: azul),
+                        SizedBox(height: 12),
+                        Text(
+                          'CONECTANDO CON LA SEÑAL...',
+                          style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1),
+                        ),
+                      ],
+                    )
+                  : hasError || currentController == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.signal_wifi_connected_no_internet_4_rounded, color: Colors.white54, size: 42),
+                            SizedBox(height: 10),
+                            Text('No fue posible reproducir esta señal.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                            SizedBox(height: 5),
+                            Text(
+                              'Puede estar temporalmente fuera de servicio o restringida.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white54, fontSize: 11),
+                            ),
+                          ],
+                        )
+                      : GestureDetector(
+                          onTap: () {
+                            if (currentController.value.isPlaying) {
+                              currentController.pause();
+                            } else {
+                              currentController.play();
+                            }
+                            setState(() {});
+                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox.expand(
+                                child: FittedBox(
+                                  fit: BoxFit.contain,
+                                  child: SizedBox(
+                                    width: currentController.value.size.width,
+                                    height: currentController.value.size.height,
+                                    child: VideoPlayer(currentController),
+                                  ),
+                                ),
+                              ),
+                              if (!currentController.value.isPlaying)
+                                const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 58),
+                            ],
+                          ),
+                        ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.sensors_rounded, color: Color(0xFFFF5C70), size: 17),
+                    const SizedBox(width: 7),
+                    const Text(
+                      'EN VIVO',
+                      style: TextStyle(color: Color(0xFFFF8290), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Reintentar señal',
+                      onPressed: _startStream,
+                      icon: const Icon(Icons.refresh_rounded, color: azul),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 7),
+                Text(widget.channel.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 7),
+                Text(widget.channel.description, style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.45)),
+                const SizedBox(height: 18),
+                const Text(
+                  'La señal es transmitida por su canal de origen. Si no carga, intenta nuevamente más tarde.',
+                  style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.5),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
