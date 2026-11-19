@@ -1518,6 +1518,28 @@ Future<List<SeriesData>> searchTvMazeShows(String query) async {
   }
 }
 
+Future<List<SeriesData>> loadTvMazeCatalog() async {
+  final client = HttpClient();
+  try {
+    final uri = Uri.https('api.tvmaze.com', '/shows', {'page': '0'});
+    final request = await client.getUrl(uri).timeout(const Duration(seconds: 20));
+    request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
+    final response = await request.close().timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
+      throw Exception('No fue posible cargar el catálogo de series.');
+    }
+    final decoded = jsonDecode(await response.transform(utf8.decoder).join());
+    if (decoded is! List) return [];
+    return decoded
+        .whereType<Map>()
+        .map((item) => SeriesData.fromJson(Map<String, dynamic>.from(item)))
+        .where((show) => show.id > 0)
+        .toList();
+  } finally {
+    client.close(force: true);
+  }
+}
+
 Future<List<Map<String, dynamic>>> loadTvMazeEpisodes(int showId) async {
   final client = HttpClient();
   try {
@@ -1545,15 +1567,16 @@ class SeriesPage extends StatefulWidget {
 }
 
 class _SeriesPageState extends State<SeriesPage> {
-  final TextEditingController searchController = TextEditingController(text: 'the');
+  final TextEditingController searchController = TextEditingController();
   List<SeriesData> results = [];
+  List<SeriesData> allSeries = [];
   bool loading = true;
   String? errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _search('the');
+    _search('');
   }
 
   @override
@@ -1564,20 +1587,19 @@ class _SeriesPageState extends State<SeriesPage> {
 
   Future<void> _search(String query) async {
     final term = query.trim();
-    if (term.isEmpty) {
-      setState(() {
-        results = [];
-        loading = false;
-        errorMessage = 'Escribe el nombre de una serie para buscar.';
-      });
-      return;
-    }
     setState(() {
       loading = true;
       errorMessage = null;
     });
     try {
-      final found = await searchTvMazeShows(term);
+      if (allSeries.isEmpty) {
+        allSeries = await loadTvMazeCatalog();
+      }
+      final found = term.isEmpty
+          ? allSeries
+          : allSeries.where((show) =>
+              show.title.toLowerCase().contains(term.toLowerCase()) ||
+              show.genre.toLowerCase().contains(term.toLowerCase())).toList();
       if (!mounted) return;
       setState(() {
         results = found;
