@@ -3536,6 +3536,136 @@ class MediaCard extends StatelessWidget {
   }
 }
 
+// CENTRO DEPORTIVO NEXORA
+
+class SportsPage extends StatefulWidget {
+  const SportsPage({super.key});
+
+  @override
+  State<SportsPage> createState() => _SportsPageState();
+}
+
+class _SportsPageState extends State<SportsPage> {
+  String selectedSport = 'Todos';
+
+  static const List<Map<String, dynamic>> sports = [
+    {'name': 'Fútbol', 'icon': Icons.sports_soccer_rounded, 'color': Color(0xFF43D9A3), 'desc': 'El deporte rey'},
+    {'name': 'Baloncesto', 'icon': Icons.sports_basketball_rounded, 'color': Color(0xFFFFA64D), 'desc': 'Cada segundo cuenta'},
+    {'name': 'Tenis', 'icon': Icons.sports_tennis_rounded, 'color': Color(0xFFD6E85B), 'desc': 'Precisión y velocidad'},
+    {'name': 'Fórmula 1', 'icon': Icons.sports_motorsports_rounded, 'color': Color(0xFFFF647C), 'desc': 'Velocidad al límite'},
+    {'name': 'Ciclismo', 'icon': Icons.directions_bike_rounded, 'color': Color(0xFF55C9FF), 'desc': 'Rutas y resistencia'},
+    {'name': 'Boxeo y MMA', 'icon': Icons.sports_mma_rounded, 'color': Color(0xFFB58CFF), 'desc': 'Fuerza y estrategia'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleSports = selectedSport == 'Todos'
+        ? sports
+        : sports.where((sport) => sport['name'] == selectedSport).toList();
+
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(
+        backgroundColor: fondo,
+        title: const Row(children: [
+          Icon(Icons.emoji_events_rounded, color: Color(0xFFFFB454)),
+          SizedBox(width: 9),
+          Text('DEPORTES NEXORA', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1)),
+        ]),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
+          children: [
+            Container(
+              height: 190,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF49301B), Color(0xFF282044), Color(0xFF111A30)]),
+                border: Border.all(color: const Color(0xFFFFB454).withOpacity(0.35)),
+                boxShadow: [BoxShadow(color: const Color(0xFFFFB454).withOpacity(0.10), blurRadius: 24, offset: const Offset(0, 8))],
+              ),
+              child: Stack(children: [
+                const Positioned(right: -8, bottom: -22, child: Icon(Icons.emoji_events_rounded, size: 145, color: Color(0x22FFFFFF))),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0x22FFB454), borderRadius: BorderRadius.circular(20)), child: const Text('VIVE LA PASIÓN', style: TextStyle(color: Color(0xFFFFC477), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2))),
+                  const SizedBox(height: 13),
+                  const Text('El deporte\nnos une.', style: TextStyle(fontSize: 29, height: 1.05, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 9),
+                  const Text('Tu espacio para descubrir el mundo deportivo.', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: 25),
+            const Text('EXPLORA POR DISCIPLINA', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+            const SizedBox(height: 5),
+            const Text('Elige tu deporte favorito.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 38,
+              child: ListView(scrollDirection: Axis.horizontal, children: [
+                'Todos', ...sports.map((sport) => sport['name'] as String),
+              ].map((name) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(name), selected: selectedSport == name,
+                  onSelected: (_) => setState(() => selectedSport = name),
+                  selectedColor: azul.withOpacity(0.22), backgroundColor: panel,
+                  labelStyle: TextStyle(color: selectedSport == name ? azul : Colors.white70, fontSize: 10, fontWeight: FontWeight.w700),
+                  side: BorderSide(color: selectedSport == name ? azul.withOpacity(0.55) : Colors.white10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+              )).toList()),
+            ),
+            const SizedBox(height: 15),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: visibleSports.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.18),
+              itemBuilder: (context, index) {
+                final sport = visibleSports[index];
+                final color = sport['color'] as Color;
+                return Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [color.withOpacity(0.16), panel, const Color(0xFF10182B)]),
+                    border: Border.all(color: color.withOpacity(0.30)),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Icon(sport['icon'] as IconData, color: color, size: 34),
+                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(sport['name'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 4),
+                      Text(sport['desc'] as String, style: const TextStyle(color: Colors.white54, fontSize: 9)),
+                    ]),
+                  ]),
+                );
+              },
+            ),
+            const SizedBox(height: 22),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: const Color(0xFF121D32), borderRadius: BorderRadius.circular(18), border: Border.all(color: azul.withOpacity(0.18))),
+              child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.sports_rounded, color: azul, size: 23),
+                SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Más deporte, próximamente', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                  SizedBox(height: 6),
+                  Text('Estamos preparando esta sección para incorporar noticias, calendarios y transmisiones deportivas de fuentes autorizadas. Por ahora no muestra marcadores ni eventos en directo.', style: TextStyle(color: Colors.white60, fontSize: 10, height: 1.45)),
+                ])),
+              ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // EXPLORAR
 
 class ExplorePage extends StatelessWidget {
@@ -3548,7 +3678,7 @@ class ExplorePage extends StatelessWidget {
       _ExploreOption('Series', 'Descubre historias y temporadas', Icons.live_tv_rounded, morado, true, series: true),
       _ExploreOption('Anime', 'Explora mundos y aventuras', Icons.animation_rounded, const Color(0xFFFF76B7), true, anime: true),
       _ExploreOption('TV en vivo', 'Canales públicos en directo', Icons.tv_rounded, const Color(0xFF45D6C5), true, liveTv: true),
-      _ExploreOption('Deportes', 'Muy pronto: vive la emoción', Icons.sports_soccer_rounded, const Color(0xFFFFB454), false),
+      _ExploreOption('Deportes', 'Explora el universo deportivo', Icons.sports_soccer_rounded, const Color(0xFFFFB454), true, sports: true),
       _ExploreOption('Documentales', 'Muy pronto: descubre el mundo', Icons.public_rounded, const Color(0xFF65D6A5), false),
       _ExploreOption('Música', 'Muy pronto: siente el ritmo', Icons.headphones_rounded, const Color(0xFFFF76B7), false),
       _ExploreOption('Educación', 'Muy pronto: aprende más', Icons.school_rounded, const Color(0xFF9EABFF), false),
@@ -3649,8 +3779,9 @@ class _ExploreOption {
   final bool series;
   final bool liveTv;
   final bool anime;
+  final bool sports;
 
-  const _ExploreOption(this.title, this.subtitle, this.icon, this.color, this.available, {this.series = false, this.liveTv = false, this.anime = false});
+  const _ExploreOption(this.title, this.subtitle, this.icon, this.color, this.available, {this.series = false, this.liveTv = false, this.anime = false, this.sports = false});
 }
 
 class _ExploreTile extends StatelessWidget {
@@ -3663,7 +3794,9 @@ class _ExploreTile extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(21),
       onTap: () {
-        if (option.liveTv) {
+        if (option.sports) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SportsPage()));
+        } else if (option.liveTv) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveTvPage()));
         } else if (option.available && option.series) {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const SeriesPage()));
