@@ -138,7 +138,7 @@ jobs:
         run: |
           set -e
           HUELLA="$(keytool -list -v -keystore android/app/nexora-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | awk -F': ' '/SHA1:/{print $2; exit}' | tr -d ':' | tr '[:lower:]' '[:upper:]')"
-          ESPERADA='D1C3317F1056EE2217CF005F2036130CB494C25E'
+          ESPERADA='5759A6ED00A46DDA6BB75D8421AA9BCB95CB2ABE'
           if [ "$HUELLA" != "$ESPERADA" ]; then
             echo 'ERROR: La llave configurada no coincide con la llave permanente recuperada.'
             exit 1
@@ -159,7 +159,7 @@ jobs:
           test -n "$APKSIGNER" || { echo 'No se encontro apksigner'; exit 1; }
           "$APKSIGNER" verify --print-certs "$APK" > /tmp/nexora-apk-cert.txt
           HUELLA="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' /tmp/nexora-apk-cert.txt | tr -d ':' | tr '[:lower:]' '[:upper:]')"
-          ESPERADA='D1C3317F1056EE2217CF005F2036130CB494C25E'
+          ESPERADA='5759A6ED00A46DDA6BB75D8421AA9BCB95CB2ABE'
           if [ "$HUELLA" != "$ESPERADA" ]; then
             echo 'ERROR: La APK no quedo firmada con la llave permanente esperada.'
             exit 1
