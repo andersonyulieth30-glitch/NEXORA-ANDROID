@@ -1969,7 +1969,7 @@ class AnimeData {
     final rel = item['relationships'] is Map ? Map<String, dynamic>.from(item['relationships']) : <String, dynamic>{};
     final catRel = rel['categories'] is Map ? Map<String, dynamic>.from(rel['categories']) : <String, dynamic>{};
     final catData = catRel['data'] is List ? catRel['data'] as List : <dynamic>[];
-    final names = catData.whereType<Map>().map((x) => categoryNames[x['id']?.toString() ?? '']).where((x) => x.isNotEmpty).toList();
+    final names = catData.whereType<Map>().map((x) => categoryNames[x['id']?.toString() ?? ''] ?? '').where((x) => x.isNotEmpty).toList();
     const genreMap = {'Action':'Acción','Adventure':'Aventura','Comedy':'Comedia','Drama':'Drama','Fantasy':'Fantasía','Romance':'Romance','Science Fiction':'Ciencia ficción','Horror':'Terror','Thriller':'Suspenso'};
     return AnimeData(
       id: int.tryParse(item['id']?.toString() ?? '') ?? 0,
