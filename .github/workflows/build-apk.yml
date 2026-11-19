@@ -171,9 +171,3 @@ jobs:
         with:
           name: NEXORA-APK-FIRMADO
           path: build/app/outputs/flutter-apk/app-release.apk
-car firma de la APK generada
-        run: |
-          set -e
-          APK='build/app/outputs/flutter-apk/app-release.apk'
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -n "$A
