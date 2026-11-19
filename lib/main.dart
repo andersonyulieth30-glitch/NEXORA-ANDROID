@@ -3547,6 +3547,9 @@ class SportsPage extends StatefulWidget {
 
 class _SportsPageState extends State<SportsPage> {
   String selectedSport = 'Todos';
+  bool loadingNews = true;
+  String? newsError;
+  List<Map<String, String>> news = [];
 
   static const List<Map<String, dynamic>> sports = [
     {'name': 'Fútbol', 'icon': Icons.sports_soccer_rounded, 'color': Color(0xFF43D9A3), 'desc': 'El deporte rey'},
@@ -3558,11 +3561,60 @@ class _SportsPageState extends State<SportsPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadSportsNews();
+  }
+
+  String _cleanXml(String value) => value
+      .replaceAll('<![CDATA[', '').replaceAll(']]>', '')
+      .replaceAll('&amp;', '&').replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'").replaceAll('&apos;', "'")
+      .replaceAll('&lt;', '<').replaceAll('&gt;', '>').trim();
+
+  Future<void> _loadSportsNews() async {
+    if (mounted) setState(() { loadingNews = true; newsError = null; });
+    try {
+      final sportQuery = selectedSport == 'Todos' ? 'deportes Colombia' : '${selectedSport == 'Fórmula 1' ? 'Formula 1' : selectedSport} deporte';
+      final uri = Uri.https('news.google.com', '/rss/search', {
+        'q': '$sportQuery cuando:7d', 'hl': 'es-419', 'gl': 'CO', 'ceid': 'CO:es-419',
+      });
+      final response = await http.get(uri, headers: {'User-Agent': 'NEXORA/1.0'}).timeout(const Duration(seconds: 18));
+      if (response.statusCode != 200) throw Exception('No se pudo consultar las noticias.');
+      final xml = utf8.decode(response.bodyBytes, allowMalformed: true);
+      final items = RegExp(r'<item>(.*?)</item>', dotAll: true).allMatches(xml);
+      final result = <Map<String, String>>[];
+      for (final item in items.take(12)) {
+        final body = item.group(1) ?? '';
+        String tag(String name) {
+          final match = RegExp('<$name[^>]*>(.*?)</$name>', dotAll: true).firstMatch(body);
+          return match == null ? '' : _cleanXml(match.group(1) ?? '');
+        }
+        final title = tag('title');
+        final link = tag('link');
+        final source = tag('source');
+        final date = tag('pubDate');
+        if (title.isNotEmpty && link.startsWith('http')) {
+          result.add({'title': title, 'link': link, 'source': source.isEmpty ? 'Noticias deportivas' : source, 'date': date});
+        }
+      }
+      if (result.isEmpty) throw Exception('No hay noticias disponibles en este momento.');
+      if (mounted) setState(() { news = result; loadingNews = false; });
+    } catch (_) {
+      if (mounted) setState(() { loadingNews = false; newsError = 'No pudimos cargar las noticias. Comprueba tu conexión e inténtalo de nuevo.'; });
+    }
+  }
+
+  Future<void> _openNews(String link) async {
+    final uri = Uri.tryParse(link);
+    if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final visibleSports = selectedSport == 'Todos'
         ? sports
         : sports.where((sport) => sport['name'] == selectedSport).toList();
-
     return Scaffold(
       backgroundColor: fondo,
       appBar: AppBar(
@@ -3572,14 +3624,14 @@ class _SportsPageState extends State<SportsPage> {
           SizedBox(width: 9),
           Text('DEPORTES NEXORA', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1)),
         ]),
+        actions: [IconButton(onPressed: _loadSportsNews, icon: const Icon(Icons.refresh_rounded), tooltip: 'Actualizar noticias')],
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
           children: [
             Container(
-              height: 190,
-              padding: const EdgeInsets.all(20),
+              height: 190, padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
                 gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF49301B), Color(0xFF282044), Color(0xFF111A30)]),
@@ -3593,72 +3645,49 @@ class _SportsPageState extends State<SportsPage> {
                   const SizedBox(height: 13),
                   const Text('El deporte\nnos une.', style: TextStyle(fontSize: 29, height: 1.05, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 9),
-                  const Text('Tu espacio para descubrir el mundo deportivo.', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const Text('Noticias deportivas recientes, en español.', style: TextStyle(color: Colors.white70, fontSize: 11)),
                 ]),
               ]),
             ),
             const SizedBox(height: 25),
             const Text('EXPLORA POR DISCIPLINA', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
             const SizedBox(height: 5),
-            const Text('Elige tu deporte favorito.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+            const Text('Elige un deporte para filtrar sus noticias.', style: TextStyle(color: Colors.white54, fontSize: 11)),
             const SizedBox(height: 14),
-            SizedBox(
-              height: 38,
-              child: ListView(scrollDirection: Axis.horizontal, children: [
-                'Todos', ...sports.map((sport) => sport['name'] as String),
-              ].map((name) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(name), selected: selectedSport == name,
-                  onSelected: (_) => setState(() => selectedSport = name),
-                  selectedColor: azul.withOpacity(0.22), backgroundColor: panel,
-                  labelStyle: TextStyle(color: selectedSport == name ? azul : Colors.white70, fontSize: 10, fontWeight: FontWeight.w700),
-                  side: BorderSide(color: selectedSport == name ? azul.withOpacity(0.55) : Colors.white10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-              )).toList()),
-            ),
-            const SizedBox(height: 15),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: visibleSports.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.18),
-              itemBuilder: (context, index) {
-                final sport = visibleSports[index];
-                final color = sport['color'] as Color;
-                return Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [color.withOpacity(0.16), panel, const Color(0xFF10182B)]),
-                    border: Border.all(color: color.withOpacity(0.30)),
-                  ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Icon(sport['icon'] as IconData, color: color, size: 34),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(sport['name'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 4),
-                      Text(sport['desc'] as String, style: const TextStyle(color: Colors.white54, fontSize: 9)),
-                    ]),
-                  ]),
-                );
-              },
-            ),
+            SizedBox(height: 38, child: ListView(scrollDirection: Axis.horizontal, children: ['Todos', ...sports.map((sport) => sport['name'] as String)].map((name) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(label: Text(name), selected: selectedSport == name,
+                onSelected: (_) { setState(() => selectedSport = name); _loadSportsNews(); },
+                selectedColor: azul.withOpacity(0.22), backgroundColor: panel,
+                labelStyle: TextStyle(color: selectedSport == name ? azul : Colors.white70, fontSize: 10, fontWeight: FontWeight.w700),
+                side: BorderSide(color: selectedSport == name ? azul.withOpacity(0.55) : Colors.white10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+            )).toList())),
             const SizedBox(height: 22),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFF121D32), borderRadius: BorderRadius.circular(18), border: Border.all(color: azul.withOpacity(0.18))),
-              child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.sports_rounded, color: azul, size: 23),
-                SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Más deporte, próximamente', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-                  SizedBox(height: 6),
-                  Text('Estamos preparando esta sección para incorporar noticias, calendarios y transmisiones deportivas de fuentes autorizadas. Por ahora no muestra marcadores ni eventos en directo.', style: TextStyle(color: Colors.white60, fontSize: 10, height: 1.45)),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('NOTICIAS DEPORTIVAS', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: .5)),
+              const Text('Últimos 7 días', style: TextStyle(color: Colors.white38, fontSize: 10)),
+            ]),
+            const SizedBox(height: 12),
+            if (loadingNews) const Padding(padding: EdgeInsets.all(28), child: Center(child: CircularProgressIndicator(color: azul)))
+            else if (newsError != null) Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16)), child: Column(children: [
+              const Icon(Icons.wifi_off_rounded, color: Colors.white54, size: 30), const SizedBox(height: 8),
+              Text(newsError!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+              const SizedBox(height: 10), TextButton.icon(onPressed: _loadSportsNews, icon: const Icon(Icons.refresh), label: const Text('Reintentar')),
+            ]))
+            else ...news.map((item) => Padding(padding: const EdgeInsets.only(bottom: 10), child: InkWell(
+              borderRadius: BorderRadius.circular(16), onTap: () => _openNews(item['link']!),
+              child: Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: azul.withOpacity(.13))),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Icon(Icons.article_rounded, color: azul, size: 23), const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(item['title']!, style: const TextStyle(fontSize: 12, height: 1.35, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 7), Text(item['source']!, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                  ])), const SizedBox(width: 6), const Icon(Icons.open_in_new_rounded, color: Colors.white38, size: 16),
                 ])),
-              ]),
-            ),
+            ))),
+            const SizedBox(height: 12),
+            const Text('Las noticias se consultan desde Google Noticias. Al seleccionar un titular, se abre la publicación original.', style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.4)),
           ],
         ),
       ),
