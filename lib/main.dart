@@ -1404,6 +1404,47 @@ const List<String> movieGenres = [
   'Documental',
 ];
 
+// Guarda series y anime en la biblioteca privada del usuario.
+Future<void> saveNexoraFavorite({
+  required BuildContext context,
+  required String type,
+  required String id,
+  required String title,
+  required String category,
+  required String year,
+  required String description,
+  required String image,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Inicia sesión para guardar favoritos.')),
+    );
+    return;
+  }
+  try {
+    final ref = FirebaseFirestore.instance
+        .collection('users').doc(user.uid).collection('favorites')
+        .doc('${type}_$id');
+    await ref.set({
+      'type': type, 'title': title, 'category': category, 'year': year,
+      'description': description, 'image': image,
+      'savedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Agregado a Mi lista.')),
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo guardar. Inténtalo de nuevo.')),
+      );
+    }
+  }
+}
+
 // CATÁLOGO REAL DE SERIES - TVMAZE (CC BY-SA, CON ATRIBUCIÓN)
 
 class SeriesData {
@@ -1652,6 +1693,17 @@ class _SeriesPageState extends State<SeriesPage> {
                     style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
                   ),
                 ),
+                const SizedBox(height: 14),
+                SizedBox(width: double.infinity, height: 46, child: OutlinedButton.icon(
+                  onPressed: () => saveNexoraFavorite(
+                    context: sheetContext, type: 'series', id: series.id.toString(),
+                    title: series.title, category: series.genre, year: series.year,
+                    description: series.synopsis, image: series.image,
+                  ),
+                  icon: const Icon(Icons.bookmark_add_outlined),
+                  label: const Text('AGREGAR A MI LISTA'),
+                  style: OutlinedButton.styleFrom(foregroundColor: azul, side: const BorderSide(color: azul)),
+                )),
                 const SizedBox(height: 18),
                 const Text('TEMPORADAS Y EPISODIOS', style: TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1)),
                 const SizedBox(height: 9),
@@ -2071,6 +2123,17 @@ class _AnimePageState extends State<AnimePage> {
       const SizedBox(height: 8), Text(anime.genres.join(' · '), style: const TextStyle(color: Colors.white60, fontSize: 12)),
       const SizedBox(height: 15), const Text('SINOPSIS', style: TextStyle(color: azul, fontWeight: FontWeight.w900, letterSpacing: 1)),
       const SizedBox(height: 7), FutureBuilder<String>(future: translateNexoraText(anime.synopsis), builder: (_, snap) => Text(snap.data ?? 'Preparando sinopsis en español…', style: const TextStyle(height: 1.5, color: Colors.white70))),
+      const SizedBox(height: 14),
+      SizedBox(width: double.infinity, height: 46, child: OutlinedButton.icon(
+        onPressed: () => saveNexoraFavorite(
+          context: ctx, type: 'anime', id: anime.id.toString(),
+          title: anime.title, category: anime.genres.join(' · '), year: anime.year,
+          description: anime.synopsis, image: anime.image,
+        ),
+        icon: const Icon(Icons.bookmark_add_outlined),
+        label: const Text('AGREGAR A MI LISTA'),
+        style: OutlinedButton.styleFrom(foregroundColor: azul, side: const BorderSide(color: azul)),
+      )),
       const SizedBox(height: 15), const Text('Información y catálogo de anime. La reproducción se habilitará cuando exista una fuente autorizada.', style: TextStyle(color: Colors.white38, fontSize: 11)),
       const SizedBox(height: 12), SizedBox(width: double.infinity, child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('CERRAR'))),
     ]))));
@@ -3446,7 +3509,7 @@ class LibraryPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Guarda tus películas favoritas y las encontrarás aquí cuando quieras volver a verlas.',
+              'Guarda tus películas, series y animes favoritos para encontrarlos aquí cuando quieras.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white60, height: 1.5, fontSize: 13),
             ),
@@ -3554,14 +3617,11 @@ class LibraryPage extends StatelessWidget {
                       (context, index) {
                         final document = documents[index];
                         final data = document.data();
-                        final movie = MovieData(
-                          title: data['title'] as String? ?? document.id,
-                          category: data['category'] as String? ?? '',
-                          year: data['year'] as String? ?? '',
-                          description: data['description'] as String? ?? '',
-                          duration: data['duration'] as String? ?? '',
-                          image: data['image'] as String? ?? '',
-                        );
+                        final savedTitle = data['title'] as String? ?? document.id;
+                        final savedCategory = data['category'] as String? ?? '';
+                        final savedYear = data['year'] as String? ?? '';
+                        final savedImage = data['image'] as String? ?? '';
+                        final savedType = data['type'] as String? ?? 'movie';
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 13),
@@ -3572,10 +3632,20 @@ class LibraryPage extends StatelessWidget {
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(18),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => MovieDetailPage(movie: movie)),
-                            ),
+                            onTap: () {
+                              if (savedType == 'movie') {
+                                final movie = MovieData(
+                                  title: savedTitle, category: savedCategory, year: savedYear,
+                                  description: data['description'] as String? ?? '',
+                                  duration: data['duration'] as String? ?? '', image: savedImage,
+                                );
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => MovieDetailPage(movie: movie)));
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('$savedTitle está guardado en tu biblioteca.')),
+                                );
+                              }
+                            },
                             child: Padding(
                               padding: const EdgeInsets.all(10),
                               child: Row(
@@ -3585,15 +3655,15 @@ class LibraryPage extends StatelessWidget {
                                     child: SizedBox(
                                       width: 88,
                                       height: 116,
-                                      child: movie.image.isEmpty
-                                          ? Container(color: fondo, child: const Icon(Icons.movie_rounded, color: azul, size: 35))
+                                      child: savedImage.isEmpty
+                                          ? Container(color: fondo, child: Icon(savedType == 'anime' ? Icons.animation_rounded : savedType == 'series' ? Icons.live_tv_rounded : Icons.movie_rounded, color: azul, size: 35))
                                           : CachedNetworkImage(
-                                              imageUrl: movie.image,
+                                              imageUrl: savedImage,
                                               fit: BoxFit.cover,
                                               placeholder: (_, __) => Container(color: fondo),
                                               errorWidget: (_, __, ___) => Container(
                                                 color: fondo,
-                                                child: const Icon(Icons.movie_rounded, color: azul, size: 35),
+                                                child: Icon(savedType == 'anime' ? Icons.animation_rounded : savedType == 'series' ? Icons.live_tv_rounded : Icons.movie_rounded, color: azul, size: 35),
                                               ),
                                             ),
                                     ),
@@ -3604,24 +3674,24 @@ class LibraryPage extends StatelessWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          movie.title,
+                                          savedTitle,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
                                         ),
                                         const SizedBox(height: 9),
-                                        if (movie.category.isNotEmpty)
+                                        if (savedCategory.isNotEmpty || savedType != 'movie')
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                                             decoration: BoxDecoration(
                                               color: azul.withOpacity(0.12),
                                               borderRadius: BorderRadius.circular(20),
                                             ),
-                                            child: Text(movie.category, style: const TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w700)),
+                                            child: Text('${savedType == 'anime' ? 'ANIME' : savedType == 'series' ? 'SERIE' : 'PELÍCULA'}${savedCategory.isNotEmpty ? ' · $savedCategory' : ''}', style: const TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w700)),
                                           ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          movie.duration.isEmpty ? 'Disponible en tu colección' : movie.duration,
+                                          savedYear.isEmpty ? 'Disponible en tu colección' : savedYear,
                                           style: const TextStyle(color: Colors.white54, fontSize: 11),
                                         ),
                                       ],
