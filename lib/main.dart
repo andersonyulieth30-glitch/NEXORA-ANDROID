@@ -3537,6 +3537,9 @@ class LiveChannel {
   final IconData icon;
   final bool openExternal;
 
+  // Un canal solo se puede reproducir cuando tiene una URL directa autorizada.
+  bool get hasStream => streamUrl.trim().isNotEmpty;
+
   const LiveChannel({
     required this.id,
     required this.number,
@@ -3552,11 +3555,12 @@ class LiveChannel {
 }
 
 const List<LiveChannel> liveChannels = [
+  // CANALES ACTIVOS: conserva aquí las direcciones directas que ya funcionan.
   LiveChannel(
     id: 'senal_colombia',
     number: '01',
     logoText: 'SC',
-    category: 'Cultura',
+    category: 'Nacionales',
     name: 'Señal Colombia',
     description: 'Cultura, documentales y entretenimiento colombiano',
     streamUrl:
@@ -3568,7 +3572,7 @@ const List<LiveChannel> liveChannels = [
     id: 'canal_institucional',
     number: '02',
     logoText: 'CI',
-    category: 'Institucional',
+    category: 'Nacionales',
     name: 'Canal Institucional',
     description: 'Información pública y contenidos institucionales',
     streamUrl:
@@ -3577,20 +3581,8 @@ const List<LiveChannel> liveChannels = [
     icon: Icons.account_balance_rounded,
   ),
   LiveChannel(
-    id: 'canal_trece',
-    number: '03',
-    logoText: '13',
-    category: 'Cultura',
-    name: 'Canal Trece',
-    description: 'Cultura, música, información y contenidos de las regiones',
-    streamUrl:
-        'https://stream.logicideas.media/canaltrece-live/smil:live.smil/playlist.m3u8',
-    officialUrl: 'https://canaltrece.com.co/canal-trece/',
-    icon: Icons.live_tv_rounded,
-  ),
-  LiveChannel(
     id: 'telepacifico',
-    number: '04',
+    number: '03',
     logoText: 'TP',
     category: 'Regionales',
     name: 'Telepacífico',
@@ -3599,6 +3591,55 @@ const List<LiveChannel> liveChannels = [
         'https://play.cdn.enetres.net/6E5C615AA5FF4123ACAF0DAB57B7B8DC021/022/playlist.m3u8',
     officialUrl: 'https://telepacifico.com/livetv',
     icon: Icons.waves_rounded,
+  ),
+
+  // CATÁLOGO PREPARADO: pega una URL HLS/M3U8 autorizada en streamUrl
+  // cuando el canal o su proveedor la entregue. Mientras esté vacío, no falla
+  // el reproductor ni se envía al usuario a una página externa.
+  LiveChannel(
+    id: 'canal_trece', number: '04', logoText: '13', category: 'Regionales',
+    name: 'Canal Trece', description: 'Cultura, música y contenidos de las regiones',
+    streamUrl: '', officialUrl: 'https://canaltrece.com.co/', icon: Icons.live_tv_rounded,
+  ),
+  LiveChannel(
+    id: 'teleantioquia', number: '05', logoText: 'TA', category: 'Regionales',
+    name: 'Teleantioquia', description: 'Noticias, cultura y entretenimiento de Antioquia',
+    streamUrl: '', officialUrl: 'https://www.teleantioquia.co/', icon: Icons.landscape_rounded,
+  ),
+  LiveChannel(
+    id: 'canal_tro', number: '06', logoText: 'TRO', category: 'Regionales',
+    name: 'Canal TRO', description: 'Información y cultura del oriente colombiano',
+    streamUrl: '', officialUrl: 'https://canaltro.com/', icon: Icons.public_rounded,
+  ),
+  LiveChannel(
+    id: 'canal_capital', number: '07', logoText: 'CC', category: 'Regionales',
+    name: 'Canal Capital', description: 'Actualidad y cultura de Bogotá',
+    streamUrl: '', officialUrl: 'https://www.canalcapital.gov.co/', icon: Icons.location_city_rounded,
+  ),
+  LiveChannel(
+    id: 'telecaribe', number: '08', logoText: 'TC', category: 'Regionales',
+    name: 'Telecaribe', description: 'Cultura, noticias y entretenimiento del Caribe',
+    streamUrl: '', officialUrl: 'https://telecaribe.co/', icon: Icons.waves_rounded,
+  ),
+  LiveChannel(
+    id: 'telecafe', number: '09', logoText: 'TCAF', category: 'Regionales',
+    name: 'Telecafé', description: 'Historias y actualidad del Eje Cafetero',
+    streamUrl: '', officialUrl: 'https://telecafe.com.co/', icon: Icons.local_cafe_rounded,
+  ),
+  LiveChannel(
+    id: 'teleislas', number: '10', logoText: 'TI', category: 'Regionales',
+    name: 'Teleislas', description: 'Cultura y actualidad del archipiélago',
+    streamUrl: '', officialUrl: 'https://teleislas.com.co/', icon: Icons.beach_access_rounded,
+  ),
+  LiveChannel(
+    id: 'caracol', number: '11', logoText: 'C', category: 'Nacionales',
+    name: 'Caracol Televisión', description: 'Señal nacional de Caracol Televisión',
+    streamUrl: '', officialUrl: 'https://www.caracoltv.com/senal-vivo', icon: Icons.tv_rounded,
+  ),
+  LiveChannel(
+    id: 'rcn', number: '12', logoText: 'RCN', category: 'Nacionales',
+    name: 'Canal RCN', description: 'Señal nacional de Canal RCN',
+    streamUrl: '', officialUrl: 'https://www.canalrcn.com/', icon: Icons.tv_rounded,
   ),
 ];
 
@@ -3633,6 +3674,7 @@ class _LiveTvPageState extends State<LiveTvPage> {
     'Todos',
     'Cultura',
     'Institucional',
+    'Nacionales',
     'Regionales',
     'Favoritos',
   ];
@@ -3682,6 +3724,12 @@ class _LiveTvPageState extends State<LiveTvPage> {
   }
 
   void _openChannel(LiveChannel channel) {
+    if (!channel.hasStream && !channel.openExternal) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${channel.name}: señal en proceso de integración.')),
+      );
+      return;
+    }
     if (channel.openExternal) {
       _openOfficialLivePage(context, channel);
       return;
@@ -3793,8 +3841,13 @@ class _LiveTvPageState extends State<LiveTvPage> {
                         const Icon(Icons.circle, color: Color(0xFFFF5C70), size: 7),
                         const SizedBox(width: 5),
                         Text(
-                          channel.openExternal ? 'VER EN SITIO OFICIAL' : 'SEÑAL EN VIVO',
-                          style: const TextStyle(color: Color(0xFFFF8290), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                          channel.openExternal
+                              ? 'SITIO OFICIAL'
+                              : channel.hasStream ? 'SEÑAL EN VIVO' : 'EN INTEGRACIÓN',
+                          style: TextStyle(
+                            color: channel.hasStream ? const Color(0xFFFF8290) : Colors.amberAccent,
+                            fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5,
+                          ),
                         ),
                       ],
                     ),
@@ -3816,8 +3869,10 @@ class _LiveTvPageState extends State<LiveTvPage> {
                     ),
                   ),
                   Icon(
-                    channel.openExternal ? Icons.open_in_new_rounded : Icons.play_circle_fill_rounded,
-                    color: azul,
+                    channel.openExternal
+                        ? Icons.open_in_new_rounded
+                        : channel.hasStream ? Icons.play_circle_fill_rounded : Icons.hourglass_top_rounded,
+                    color: channel.hasStream ? azul : Colors.amberAccent,
                     size: 28,
                   ),
                 ],
@@ -3957,6 +4012,10 @@ class _LiveChannelPlayerPageState extends State<LiveChannelPlayerPage> {
   }
 
   Future<void> _startStream() async {
+    if (!widget.channel.hasStream) {
+      if (mounted) setState(() { loading = false; hasError = true; });
+      return;
+    }
     final oldController = controller;
     controller = null;
     await oldController?.dispose();
