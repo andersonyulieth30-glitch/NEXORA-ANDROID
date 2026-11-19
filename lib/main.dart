@@ -3584,8 +3584,8 @@ const List<LiveChannel> liveChannels = [
     name: 'Canal Trece',
     description: 'Cultura, música, información y contenidos de las regiones',
     streamUrl:
-        'https://canaltrece-live.logicideas.media/canaltrece-live/smil:live.smil/playlist.m3u8?PlaylistM3UCL',
-    officialUrl: 'https://canaltrece.com.co/senalen-vivo/canaltrece/',
+        'https://stream.logicideas.media/canaltrece-live/smil:live.smil/playlist.m3u8',
+    officialUrl: 'https://canaltrece.com.co/canal-trece/',
     icon: Icons.live_tv_rounded,
   ),
 ];
