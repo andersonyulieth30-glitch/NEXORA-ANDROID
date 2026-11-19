@@ -1,4 +1,3 @@
-
 name: nexora
 description: NEXORA - Tu mundo. Tu entretenimiento.
 publish_to: 'none'
@@ -17,6 +16,7 @@ dependencies:
   video_player: ^2.9.2
   http: ^1.2.2
   cached_network_image: ^3.4.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
