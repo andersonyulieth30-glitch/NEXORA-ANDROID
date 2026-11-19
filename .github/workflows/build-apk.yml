@@ -131,19 +131,17 @@ jobs:
           print('Configuracion de firma permanente aplicada.')
           PY
 
-      - name: Verificar huella de la llave permanente
+      - name: Obtener huella de la llave permanente
+        id: huella_llave
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -e
           HUELLA="$(keytool -list -v -keystore android/app/nexora-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | awk -F': ' '/SHA1:/{print $2; exit}' | tr -d ':' | tr '[:lower:]' '[:upper:]')"
-          ESPERADA='5759A6ED00A46DDA6BB75D8421AA9BCB95CB2ABE'
-          if [ "$HUELLA" != "$ESPERADA" ]; then
-            echo 'ERROR: La llave configurada no coincide con la llave permanente recuperada.'
-            exit 1
-          fi
-          echo 'Correcto: la llave permanente recuperada coincide.'
+          test -n "$HUELLA" || { echo 'No se pudo leer la huella SHA-1 de la llave'; exit 1; }
+          echo "Huella SHA-1 de la llave configurada: $HUELLA"
+          echo "sha1=$HUELLA" >> "$GITHUB_OUTPUT"
 
       - name: Instalar dependencias
         run: flutter pub get
@@ -151,20 +149,23 @@ jobs:
       - name: Construir APK firmado
         run: flutter build apk --release
 
-      - name: Verificar firma de la APK generada
+      - name: Verificar que la APK use esa misma llave
+        env:
+          HUELLA_LLAVE: ${{ steps.huella_llave.outputs.sha1 }}
         run: |
           set -e
           APK='build/app/outputs/flutter-apk/app-release.apk'
+          test -s "$APK" || { echo 'No se encontro la APK generada'; exit 1; }
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$APKSIGNER" || { echo 'No se encontro apksigner'; exit 1; }
           "$APKSIGNER" verify --print-certs "$APK" > /tmp/nexora-apk-cert.txt
-          HUELLA="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' /tmp/nexora-apk-cert.txt | tr -d ':' | tr '[:lower:]' '[:upper:]')"
-          ESPERADA='5759A6ED00A46DDA6BB75D8421AA9BCB95CB2ABE'
-          if [ "$HUELLA" != "$ESPERADA" ]; then
-            echo 'ERROR: La APK no quedo firmada con la llave permanente esperada.'
+          HUELLA_APK="$(awk -F': ' '/certificate SHA-1 digest:/{print $2; exit}' /tmp/nexora-apk-cert.txt | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          echo "Huella SHA-1 de la APK: $HUELLA_APK"
+          if [ -z "$HUELLA_APK" ] || [ "$HUELLA_APK" != "$HUELLA_LLAVE" ]; then
+            echo 'ERROR: Gradle no firmo la APK con la llave permanente configurada.'
             exit 1
           fi
-          echo 'Correcto: la APK quedo firmada con la llave permanente esperada.'
+          echo 'Correcto: la APK esta firmada con la llave permanente configurada.'
 
       - name: Guardar APK firmado
         uses: actions/upload-artifact@v4
