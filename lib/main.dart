@@ -2027,7 +2027,7 @@ class _AnimePageState extends State<AnimePage> {
       const SizedBox(height: 7), Text('${anime.year}  ·  ${anime.episodes} episodios  ·  ★ ${anime.score}', style: const TextStyle(color: azul, fontSize: 12)),
       const SizedBox(height: 8), Text(anime.genres.join(' · '), style: const TextStyle(color: Colors.white60, fontSize: 12)),
       const SizedBox(height: 15), const Text('SINOPSIS', style: TextStyle(color: azul, fontWeight: FontWeight.w900, letterSpacing: 1)),
-      const SizedBox(height: 7), FutureBuilder<String>(future: translateNexoraText(anime.synopsis), builder: (_, snap) => Text(snap.data ?? 'Preparando sinopsis en español…', style: const TextStyle(height: 1.5, color: Colors.white80))),
+      const SizedBox(height: 7), FutureBuilder<String>(future: translateNexoraText(anime.synopsis), builder: (_, snap) => Text(snap.data ?? 'Preparando sinopsis en español…', style: const TextStyle(height: 1.5, color: Colors.white70))),
       const SizedBox(height: 15), const Text('Información y catálogo de anime. La reproducción se habilitará cuando exista una fuente autorizada.', style: TextStyle(color: Colors.white38, fontSize: 11)),
       const SizedBox(height: 12), SizedBox(width: double.infinity, child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('CERRAR'))),
     ]))));
@@ -2035,15 +2035,154 @@ class _AnimePageState extends State<AnimePage> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = _genre == 'Todos' ? _items : _items.where((a) => a.genres.any((g) => g.toLowerCase().contains(_genre.toLowerCase()))).toList();
-    return Scaffold(appBar: AppBar(title: const Row(children: [Icon(Icons.animation_rounded, color: azul), SizedBox(width: 9), Text('ANIME NEXORA')])), body: Column(children: [
-      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Row(children: [Expanded(child: TextField(controller: _search, textInputAction: TextInputAction.search, onSubmitted: (_) => _load(), decoration: InputDecoration(hintText: 'Buscar anime…', prefixIcon: const Icon(Icons.search), filled: true, fillColor: panel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none)))), const SizedBox(width: 8), IconButton.filled(onPressed: _load, icon: const Icon(Icons.search))])),
-      SizedBox(height: 44, child: ListView.separated(padding: const EdgeInsets.symmetric(horizontal: 16), scrollDirection: Axis.horizontal, itemCount: _genres.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(_genres[i]), selected: _genre == _genres[i], onSelected: (_) => setState(() => _genre = _genres[i]), selectedColor: azul.withOpacity(.25)))),
-      const SizedBox(height: 8),
-      Expanded(child: _loading ? const Center(child: CircularProgressIndicator(color: azul)) : _error != null ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!), const SizedBox(height: 10), ElevatedButton(onPressed: _load, child: const Text('REINTENTAR'))])) : visible.isEmpty ? const Center(child: Text('No encontramos anime en esta categoría.')) : GridView.builder(padding: const EdgeInsets.all(14), itemCount: visible.length, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: .60, crossAxisSpacing: 12, mainAxisSpacing: 14), itemBuilder: (_, i) { final a = visible[i]; return InkWell(onTap: () => _details(a), borderRadius: BorderRadius.circular(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(14), child: SizedBox(width: double.infinity, child: a.image.isEmpty ? Container(color: panel, child: const Icon(Icons.animation, size: 40, color: morado)) : Image.network(a.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: panel, child: const Icon(Icons.animation, size: 40, color: morado))))), const SizedBox(height: 7), Text(a.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)), Text('★ ${a.score}  ·  ${a.year}', style: const TextStyle(color: azul, fontSize: 10))])); })),
-      const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Datos: Jikan API · MyAnimeList', style: TextStyle(color: Colors.white30, fontSize: 9))),
-    ]));
+    final visible = _genre == 'Todos'
+        ? _items
+        : _items.where((a) => a.genres.any(
+            (g) => g.toLowerCase().contains(_genre.toLowerCase()),
+          )).toList();
+
+    Widget content;
+    if (_loading) {
+      content = const Center(child: CircularProgressIndicator(color: azul));
+    } else if (_error != null) {
+      content = Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!),
+            const SizedBox(height: 10),
+            ElevatedButton(onPressed: _load, child: const Text('REINTENTAR')),
+          ],
+        ),
+      );
+    } else if (visible.isEmpty) {
+      content = const Center(
+        child: Text('No encontramos anime en esta categoría.'),
+      );
+    } else {
+      content = GridView.builder(
+        padding: const EdgeInsets.all(14),
+        itemCount: visible.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: .60,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 14,
+        ),
+        itemBuilder: (context, index) {
+          final anime = visible[index];
+          return InkWell(
+            onTap: () => _details(anime),
+            borderRadius: BorderRadius.circular(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: anime.image.isEmpty
+                          ? Container(
+                              color: panel,
+                              child: const Icon(Icons.animation, size: 40, color: morado),
+                            )
+                          : Image.network(
+                              anime.image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stack) => Container(
+                                color: panel,
+                                child: const Icon(Icons.animation, size: 40, color: morado),
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  anime.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+                Text(
+                  '★ ${anime.score}  ·  ${anime.year}',
+                  style: const TextStyle(color: azul, fontSize: 10),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Row(
+          children: [
+            Icon(Icons.animation_rounded, color: azul),
+            SizedBox(width: 9),
+            Text('ANIME NEXORA'),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _search,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _load(),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar anime…',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: panel,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filled(onPressed: _load, icon: const Icon(Icons.search)),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: _genres.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, index) => ChoiceChip(
+                label: Text(_genres[index]),
+                selected: _genre == _genres[index],
+                onSelected: (_) => setState(() => _genre = _genres[index]),
+                selectedColor: azul.withOpacity(.25),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(child: content),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Datos: Jikan API · MyAnimeList',
+              style: TextStyle(color: Colors.white30, fontSize: 9),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+
 }
 
 
