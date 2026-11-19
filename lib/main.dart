@@ -3588,6 +3588,18 @@ const List<LiveChannel> liveChannels = [
     officialUrl: 'https://canaltrece.com.co/canal-trece/',
     icon: Icons.live_tv_rounded,
   ),
+  LiveChannel(
+    id: 'telepacifico',
+    number: '04',
+    logoText: 'TP',
+    category: 'Regionales',
+    name: 'Telepacífico',
+    description: 'Noticias, cultura y entretenimiento del Pacífico colombiano',
+    streamUrl:
+        'https://play.cdn.enetres.net/6E5C615AA5FF4123ACAF0DAB57B7B8DC021/022/playlist.m3u8',
+    officialUrl: 'https://telepacifico.com/livetv',
+    icon: Icons.waves_rounded,
+  ),
 ];
 
 Future<void> _openOfficialLivePage(BuildContext context, LiveChannel channel) async {
@@ -3621,6 +3633,7 @@ class _LiveTvPageState extends State<LiveTvPage> {
     'Todos',
     'Cultura',
     'Institucional',
+    'Regionales',
     'Favoritos',
   ];
 
