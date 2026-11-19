@@ -3843,6 +3843,50 @@ class ProfilePage extends StatelessWidget {
     if (confirmar == true) await FirebaseAuth.instance.signOut();
   }
 
+  Future<void> abrirZona18(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) return;
+    final controller = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: panel,
+        title: const Text('ACCESO +18'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Confirma la contraseña de tu cuenta NEXORA para verificar tu identidad.'),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Contraseña de tu cuenta'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CANCELAR')),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: const Text('VERIFICAR')),
+        ],
+      ),
+    );
+    if (password == null || password.isEmpty) return;
+    try {
+      final credential = EmailAuthProvider.credential(email: user.email!, password: password);
+      await user.reauthenticateWithCredential(credential);
+      if (!context.mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const Zona18Page()));
+    } on FirebaseAuthException catch (e) {
+      if (!context.mounted) return;
+      final mensaje = e.code == 'wrong-password' || e.code == 'invalid-credential'
+          ? 'La contraseña no es correcta.'
+          : 'No se pudo verificar tu cuenta. Inténtalo nuevamente.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
+    }
+  }
+
   void mostrarInfo(BuildContext context, String titulo, String mensaje, IconData icono) {
     showDialog<void>(
       context: context,
@@ -3985,6 +4029,13 @@ class ProfilePage extends StatelessWidget {
             titulo: 'Tus favoritos',
             subtitulo: 'Guarda y consulta tu contenido preferido',
             accion: () => mostrarInfo(context, 'Tus favoritos', 'Los contenidos que marques como favoritos se guardan en tu Biblioteca vinculada a tu cuenta.', Icons.favorite_outline_rounded),
+          ),
+          opcionPerfil(
+            context: context,
+            icono: Icons.lock_rounded,
+            titulo: 'Zona +18',
+            subtitulo: 'Acceso restringido con verificación de contraseña',
+            accion: () => abrirZona18(context),
           ),
           const SizedBox(height: 13),
           const Text('ACERCA DE NEXORA', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.4)),
@@ -4778,4 +4829,35 @@ class StarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+
+class Zona18Page extends StatelessWidget {
+  const Zona18Page({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('ZONA +18')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.verified_user_rounded, color: azul, size: 58),
+              const SizedBox(height: 18),
+              const Text('ACCESO VERIFICADO', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 10),
+              const Text(
+                'Tu identidad fue confirmada con la contraseña de tu cuenta NEXORA. Esta sección se habilitará con contenido legal y apropiado para adultos, sujeto a las normas de la plataforma.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
