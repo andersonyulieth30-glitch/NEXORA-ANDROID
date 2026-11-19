@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 
 Future<void> main() async {
@@ -3530,6 +3531,7 @@ class LiveChannel {
   final String streamUrl;
   final String officialUrl;
   final IconData icon;
+  final bool openExternal;
 
   const LiveChannel({
     required this.name,
@@ -3537,6 +3539,7 @@ class LiveChannel {
     required this.streamUrl,
     required this.officialUrl,
     required this.icon,
+    this.openExternal = false,
   });
 }
 
@@ -3557,7 +3560,33 @@ const List<LiveChannel> liveChannels = [
     officialUrl: 'https://www.rtvcplay.co/en-vivo/canal-institucional',
     icon: Icons.account_balance_rounded,
   ),
+  LiveChannel(
+    name: 'Canal Trece',
+    description: 'Cultura, música, información y contenidos de las regiones',
+    streamUrl: '',
+    officialUrl: 'https://canaltrece.com.co/senalen-vivo/canaltrece/',
+    icon: Icons.live_tv_rounded,
+    openExternal: true,
+  ),
 ];
+
+Future<void> _openOfficialLivePage(BuildContext context, LiveChannel channel) async {
+  final uri = Uri.parse(channel.officialUrl);
+  try {
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir la señal oficial.')),
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir la señal oficial.')),
+      );
+    }
+  }
+}
 
 class LiveTvPage extends StatelessWidget {
   const LiveTvPage({super.key});
@@ -3635,6 +3664,10 @@ class LiveTvPage extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
                   onTap: () {
+                    if (channel.openExternal) {
+                      _openOfficialLivePage(context, channel);
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -3701,7 +3734,13 @@ class LiveTvPage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const Icon(Icons.play_circle_fill_rounded, color: azul, size: 31),
+                        Icon(
+                          channel.openExternal
+                              ? Icons.open_in_new_rounded
+                              : Icons.play_circle_fill_rounded,
+                          color: azul,
+                          size: 31,
+                        ),
                       ],
                     ),
                   ),
