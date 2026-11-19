@@ -3017,6 +3017,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
           widget.title,
           style: const TextStyle(fontSize: 16),
         ),
+        actions: [
+          if (initialized && !hasError)
+            IconButton(
+              tooltip: 'Pantalla completa',
+              icon: const Icon(Icons.fullscreen_rounded, color: azul),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FullscreenPlayerView(
+                      controller: controller,
+                      title: widget.title,
+                      formatTime: formatTime,
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -3154,6 +3172,83 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         ),
                       ],
                     ),
+        ),
+      ),
+    );
+  }
+}
+
+class FullscreenPlayerView extends StatelessWidget {
+  final VideoPlayerController controller;
+  final String title;
+  final String Function(Duration) formatTime;
+
+  const FullscreenPlayerView({
+    super.key,
+    required this.controller,
+    required this.title,
+    required this.formatTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text(title, style: const TextStyle(fontSize: 14)),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AspectRatio(
+              aspectRatio: controller.value.aspectRatio,
+              child: VideoPlayer(controller),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 4),
+              child: VideoProgressIndicator(
+                controller,
+                allowScrubbing: true,
+                colors: const VideoProgressColors(
+                  playedColor: azul,
+                  bufferedColor: Colors.white30,
+                  backgroundColor: Colors.white12,
+                ),
+              ),
+            ),
+            ValueListenableBuilder<VideoPlayerValue>(
+              valueListenable: controller,
+              builder: (context, value, child) => Row(
+                children: [
+                  const SizedBox(width: 18),
+                  Text(formatTime(value.position),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  const Spacer(),
+                  IconButton(
+                    iconSize: 52,
+                    color: azul,
+                    onPressed: () async {
+                      if (value.isPlaying) {
+                        await controller.pause();
+                      } else {
+                        if (value.isCompleted) await controller.seekTo(Duration.zero);
+                        await controller.play();
+                      }
+                    },
+                    icon: Icon(value.isPlaying
+                        ? Icons.pause_circle_filled_rounded
+                        : Icons.play_circle_fill_rounded),
+                  ),
+                  const Spacer(),
+                  Text(formatTime(value.duration),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(width: 18),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
