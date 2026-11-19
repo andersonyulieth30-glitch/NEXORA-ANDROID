@@ -2280,8 +2280,19 @@ Future<List<MovieData>> loadTraktMovies({String query = ''}) async {
     final runtime = movie['runtime'];
     final runtimeText = runtime is num && runtime > 0 ? '${runtime ~/ 60} h ${runtime % 60} min' : 'Duración no disponible';
     final genres = movie['genres'];
+    const genreNames = <String, String>{
+      'action': 'Acción', 'adventure': 'Aventura', 'animation': 'Animación',
+      'comedy': 'Comedia', 'crime': 'Crimen', 'documentary': 'Documental',
+      'drama': 'Drama', 'family': 'Familiar', 'fantasy': 'Fantasía',
+      'history': 'Historia', 'horror': 'Terror', 'music': 'Música',
+      'mystery': 'Misterio', 'romance': 'Romance', 'science-fiction': 'Ciencia ficción',
+      'thriller': 'Suspenso', 'war': 'Bélica', 'western': 'Western',
+    };
     final category = genres is List && genres.isNotEmpty
-        ? genres.take(2).map((g) => g.toString().replaceAll('-', ' ')).join(' · ')
+        ? genres.take(2).map((g) {
+            final key = g.toString().toLowerCase();
+            return genreNames[key] ?? key.replaceAll('-', ' ');
+          }).join(' · ')
         : 'Película';
     return MovieData(
       title: (movie['title'] ?? 'Película sin título').toString(),
@@ -2308,6 +2319,7 @@ class _MoviesPageState extends State<MoviesPage> {
   final searchController = TextEditingController();
   List<MovieData> archiveMovies = [];
   bool loading = true;
+  String selectedGenre = 'Todas';
   String? loadError;
 
   @override
@@ -2342,10 +2354,14 @@ class _MoviesPageState extends State<MoviesPage> {
 
   List<MovieData> get filteredMovies {
     final query = searchController.text.toLowerCase().trim();
-    return archiveMovies.where((movie) =>
-      movie.title.toLowerCase().contains(query) ||
-      movie.description.toLowerCase().contains(query) ||
-      movie.year.toLowerCase().contains(query)).toList();
+    return archiveMovies.where((movie) {
+      final matchesText = movie.title.toLowerCase().contains(query) ||
+          movie.description.toLowerCase().contains(query) ||
+          movie.year.toLowerCase().contains(query);
+      final matchesGenre = selectedGenre == 'Todas' ||
+          movie.category.toLowerCase().contains(selectedGenre.toLowerCase());
+      return matchesText && matchesGenre;
+    }).toList();
   }
 
   @override
@@ -2389,6 +2405,33 @@ class _MoviesPageState extends State<MoviesPage> {
               suffixIcon: searchController.text.isEmpty ? null : IconButton(
                 onPressed: () { searchController.clear(); setState(() {}); },
                 icon: const Icon(Icons.close, color: Colors.white60)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 38,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: movieGenres.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final genre = movieGenres[index];
+                final selected = selectedGenre == genre;
+                return ChoiceChip(
+                  label: Text(genre),
+                  selected: selected,
+                  onSelected: (_) => setState(() => selectedGenre = genre),
+                  selectedColor: azul,
+                  backgroundColor: panel,
+                  labelStyle: TextStyle(
+                    color: selected ? fondo : Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  side: BorderSide(color: selected ? azul : Colors.white12),
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                );
+              },
             ),
           ),
           const SizedBox(height: 16),
