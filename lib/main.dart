@@ -2026,6 +2026,103 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 24),
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseAuth.instance.currentUser == null
+                ? null
+                : FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .collection('watch_history')
+                    .orderBy('watchedAt', descending: true)
+                    .limit(8)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              final recent = snapshot.data?.docs ?? [];
+              if (recent.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionHeader(
+                    title: 'CONTINÚA EN TU UNIVERSO',
+                    subtitle: 'Tus últimos contenidos vistos',
+                  ),
+                  const SizedBox(height: 13),
+                  SizedBox(
+                    height: 154,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recent.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        final data = recent[index].data();
+                        final title = data['title'] as String? ?? 'Contenido';
+                        final type = data['type'] as String? ?? 'movie';
+                        final image = data['image'] as String? ?? '';
+                        final label = type == 'tv'
+                            ? 'TV EN VIVO'
+                            : type == 'series'
+                                ? 'SERIE'
+                                : type == 'anime'
+                                    ? 'ANIME'
+                                    : 'PELÍCULA';
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const HistoryPage()),
+                          ),
+                          child: SizedBox(
+                            width: 112,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: SizedBox(
+                                      width: 112,
+                                      child: image.isEmpty
+                                          ? Container(
+                                              color: panel,
+                                              child: const Icon(Icons.play_circle_outline_rounded, color: azul, size: 34),
+                                            )
+                                          : CachedNetworkImage(
+                                              imageUrl: image,
+                                              fit: BoxFit.cover,
+                                              errorWidget: (_, __, ___) => Container(
+                                                color: panel,
+                                                child: const Icon(Icons.play_circle_outline_rounded, color: azul, size: 34),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                Text(label, style: const TextStyle(color: azul, fontSize: 8, fontWeight: FontWeight.w800)),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryPage())),
+                      icon: const Icon(Icons.history_rounded, size: 16),
+                      label: const Text('VER TODO EL HISTORIAL'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 27),
           const SectionHeader(title: 'TENDENCIAS EN NEXORA', subtitle: 'Lo que no te puedes perder'),
           const SizedBox(height: 13),
