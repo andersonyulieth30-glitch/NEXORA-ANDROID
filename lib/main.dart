@@ -3526,6 +3526,10 @@ class ProfilePage extends StatelessWidget {
 // TELEVISIÓN EN VIVO
 // Señales públicas cuya transmisión en línea es ofrecida por RTVC.
 class LiveChannel {
+  final String id;
+  final String number;
+  final String logoText;
+  final String category;
   final String name;
   final String description;
   final String streamUrl;
@@ -3534,6 +3538,10 @@ class LiveChannel {
   final bool openExternal;
 
   const LiveChannel({
+    required this.id,
+    required this.number,
+    required this.logoText,
+    required this.category,
     required this.name,
     required this.description,
     required this.streamUrl,
@@ -3545,6 +3553,10 @@ class LiveChannel {
 
 const List<LiveChannel> liveChannels = [
   LiveChannel(
+    id: 'senal_colombia',
+    number: '01',
+    logoText: 'SC',
+    category: 'Cultura',
     name: 'Señal Colombia',
     description: 'Cultura, documentales y entretenimiento colombiano',
     streamUrl:
@@ -3553,6 +3565,10 @@ const List<LiveChannel> liveChannels = [
     icon: Icons.public_rounded,
   ),
   LiveChannel(
+    id: 'canal_institucional',
+    number: '02',
+    logoText: 'CI',
+    category: 'Institucional',
     name: 'Canal Institucional',
     description: 'Información pública y contenidos institucionales',
     streamUrl:
@@ -3561,12 +3577,16 @@ const List<LiveChannel> liveChannels = [
     icon: Icons.account_balance_rounded,
   ),
   LiveChannel(
+    id: 'canal_trece',
+    number: '03',
+    logoText: '13',
+    category: 'Cultura',
     name: 'Canal Trece',
     description: 'Cultura, música, información y contenidos de las regiones',
-    streamUrl: '',
+    streamUrl:
+        'https://stream.logicideas.media/canaltrece-live/smil:live.smil/playlist.m3u8',
     officialUrl: 'https://canaltrece.com.co/senalen-vivo/canaltrece/',
     icon: Icons.live_tv_rounded,
-    openExternal: true,
   ),
 ];
 
@@ -3588,173 +3608,316 @@ Future<void> _openOfficialLivePage(BuildContext context, LiveChannel channel) as
   }
 }
 
-class LiveTvPage extends StatelessWidget {
+class LiveTvPage extends StatefulWidget {
   const LiveTvPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: fondo,
-      appBar: AppBar(
-        title: const Text('TV EN VIVO'),
-        backgroundColor: fondo,
+  State<LiveTvPage> createState() => _LiveTvPageState();
+}
+
+class _LiveTvPageState extends State<LiveTvPage> {
+  String selectedCategory = 'Todos';
+  static const List<String> categories = [
+    'Todos',
+    'Cultura',
+    'Institucional',
+    'Favoritos',
+  ];
+
+  CollectionReference<Map<String, dynamic>>? get _favoritesReference {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('live_favorites');
+  }
+
+  Future<void> _toggleFavorite(
+    LiveChannel channel,
+    Set<String> favoriteIds,
+  ) async {
+    final reference = _favoritesReference;
+    if (reference == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inicia sesión para guardar canales favoritos.')),
+      );
+      return;
+    }
+
+    final favoriteRef = reference.doc(channel.id);
+    final isFavorite = favoriteIds.contains(channel.id);
+    try {
+      if (isFavorite) {
+        await favoriteRef.delete();
+      } else {
+        await favoriteRef.set({
+          'channelId': channel.id,
+          'name': channel.name,
+          'number': channel.number,
+          'category': channel.category,
+          'savedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo actualizar tus canales favoritos.')),
+        );
+      }
+    }
+  }
+
+  void _openChannel(LiveChannel channel) {
+    if (channel.openExternal) {
+      _openOfficialLivePage(context, channel);
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LiveChannelPlayerPage(channel: channel),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(19),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF17446A), Color(0xFF30205D), panel],
-              ),
-              border: Border.all(color: azul.withOpacity(0.35)),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    );
+  }
+
+  Widget _categoryChip(String category) {
+    final selected = selectedCategory == category;
+    return Padding(
+      padding: const EdgeInsets.only(right: 9),
+      child: ChoiceChip(
+        label: Text(category),
+        selected: selected,
+        onSelected: (_) => setState(() => selectedCategory = category),
+        labelStyle: TextStyle(
+          color: selected ? fondo : Colors.white70,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+        selectedColor: azul,
+        backgroundColor: panel,
+        side: BorderSide(color: selected ? azul : Colors.white12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        showCheckmark: false,
+      ),
+    );
+  }
+
+  Widget _channelCard(LiveChannel channel, Set<String> favoriteIds) {
+    final isFavorite = favoriteIds.contains(channel.id);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 11),
+      decoration: BoxDecoration(
+        color: panel,
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: azul.withOpacity(0.17)),
+        boxShadow: [
+          BoxShadow(color: azul.withOpacity(0.045), blurRadius: 16, offset: const Offset(0, 5)),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(19),
+        onTap: () => _openChannel(channel),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF164A70), Color(0xFF39215D)],
+                  ),
+                  border: Border.all(color: azul.withOpacity(0.45)),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Icon(Icons.sensors_rounded, color: Color(0xFFFF5C70), size: 18),
-                    SizedBox(width: 8),
+                    Icon(channel.icon, color: Colors.white.withOpacity(0.15), size: 43),
                     Text(
-                      'TRANSMISIÓN EN DIRECTO',
-                      style: TextStyle(
-                        color: azul,
-                        fontSize: 10,
+                      channel.logoText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                        letterSpacing: 0.5,
+                        shadows: [Shadow(color: azul, blurRadius: 12)],
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
-                Text(
-                  'Televisión para descubrir.',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                ),
-                SizedBox(height: 7),
-                Text(
-                  'Disfruta señales públicas disponibles en internet. La disponibilidad depende de cada emisora.',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.45),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'CANALES DISPONIBLES',
-            style: TextStyle(
-              color: azul,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.3,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...liveChannels.map(
-            (channel) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Material(
-                color: panel,
-                borderRadius: BorderRadius.circular(18),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    if (channel.openExternal) {
-                      _openOfficialLivePage(context, channel);
-                      return;
-                    }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LiveChannelPlayerPage(channel: channel),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: azul.withOpacity(0.20)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'NEXORA ${channel.number}',
+                      style: const TextStyle(color: azul, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1),
                     ),
-                    child: Row(
+                    const SizedBox(height: 3),
+                    Text(
+                      channel.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      channel.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white54, fontSize: 10, height: 1.3),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
                       children: [
-                        Container(
-                          width: 58,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF164A70), Color(0xFF39215D)],
-                            ),
-                          ),
-                          child: Icon(channel.icon, color: azul, size: 29),
-                        ),
-                        const SizedBox(width: 13),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                channel.name,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                channel.description,
-                                style: const TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 10,
-                                  height: 1.35,
-                                ),
-                              ),
-                              const SizedBox(height: 7),
-                              const Row(
-                                children: [
-                                  Icon(Icons.circle, color: Color(0xFFFF5C70), size: 7),
-                                  SizedBox(width: 5),
-                                  Text(
-                                    'SEÑAL EN VIVO',
-                                    style: TextStyle(
-                                      color: Color(0xFFFF8290),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.7,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          channel.openExternal
-                              ? Icons.open_in_new_rounded
-                              : Icons.play_circle_fill_rounded,
-                          color: azul,
-                          size: 31,
+                        const Icon(Icons.circle, color: Color(0xFFFF5C70), size: 7),
+                        const SizedBox(width: 5),
+                        Text(
+                          channel.openExternal ? 'VER EN SITIO OFICIAL' : 'SEÑAL EN VIVO',
+                          style: const TextStyle(color: Color(0xFFFF8290), fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ),
+              const SizedBox(width: 4),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _toggleFavorite(channel, favoriteIds),
+                    icon: Icon(
+                      isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: isFavorite ? const Color(0xFFFF5C87) : Colors.white54,
+                      size: 22,
+                    ),
+                  ),
+                  Icon(
+                    channel.openExternal ? Icons.open_in_new_rounded : Icons.play_circle_fill_rounded,
+                    color: azul,
+                    size: 28,
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          const Text(
-            'NEXORA incluye señales públicas. Los canales y sus transmisiones pertenecen a sus respectivos titulares.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.45),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final favoritesReference = _favoritesReference;
+    final favoritesStream = favoritesReference?.snapshots();
+
+    return Scaffold(
+      backgroundColor: fondo,
+      appBar: AppBar(
+        title: const Row(
+          children: [
+            Icon(Icons.live_tv_rounded, color: azul),
+            SizedBox(width: 9),
+            Text('TV EN VIVO'),
+          ],
+        ),
+        backgroundColor: fondo,
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: favoritesStream,
+        builder: (context, snapshot) {
+          final favoriteIds = <String>{};
+          for (final document in snapshot.data?.docs ?? []) {
+            favoriteIds.add(document.id);
+          }
+
+          final visibleChannels = liveChannels.where((channel) {
+            if (selectedCategory == 'Favoritos') return favoriteIds.contains(channel.id);
+            if (selectedCategory == 'Todos') return true;
+            return channel.category == selectedCategory;
+          }).toList();
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(19),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF17446A), Color(0xFF30205D), panel],
+                  ),
+                  border: Border.all(color: azul.withOpacity(0.35)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.sensors_rounded, color: Color(0xFFFF5C70), size: 18),
+                        SizedBox(width: 8),
+                        Text('TRANSMISIÓN EN DIRECTO', style: TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Text('Tu televisión, en un solo lugar.', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                    SizedBox(height: 7),
+                    Text('Explora canales disponibles, guarda tus favoritos y entra a la señal con un toque.', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.45)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 22),
+              const Text('CATEGORÍAS', style: TextStyle(color: azul, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+              const SizedBox(height: 9),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: categories.map(_categoryChip).toList()),
+              ),
+              const SizedBox(height: 17),
+              Row(
+                children: [
+                  const Expanded(child: Text('CANALES DISPONIBLES', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1))),
+                  Text('${visibleChannels.length} CANALES', style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.w800)),
+                ],
+              ),
+              const SizedBox(height: 11),
+              if (visibleChannels.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white10)),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.favorite_border_rounded, color: azul, size: 34),
+                      SizedBox(height: 10),
+                      Text('Aún no tienes canales favoritos', style: TextStyle(fontWeight: FontWeight.w800)),
+                      SizedBox(height: 5),
+                      Text('Toca el corazón de un canal para guardarlo aquí.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    ],
+                  ),
+                )
+              else
+                ...visibleChannels.map((channel) => _channelCard(channel, favoriteIds)),
+              const SizedBox(height: 8),
+              const Text(
+                'NEXORA reúne señales públicas. Las transmisiones pertenecen a sus respectivos canales y pueden variar según su disponibilidad.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white38, fontSize: 10, height: 1.45),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
