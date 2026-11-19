@@ -83,52 +83,112 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
+
           app = Path('android/app/build.gradle')
           text = app.read_text()
-          props = [
-              'def keystoreProperties = new Properties()',
-              "def keystorePropertiesFile = rootProject.file('key.properties')",
-              'if (!keystorePropertiesFile.exists()) {',
-              "    throw new GradleException('No se encontro android/key.properties')",
-              '}',
-              'keystoreProperties.load(new FileInputStream(keystorePropertiesFile))',
-          ]
-          if 'def keystoreProperties = new Properties()' not in text:
-              plugin = re.search(r'(?m)^plugins\s*\{[^}]*\}', text, re.S)
-              if not plugin:
-                  raise SystemExit('No se encontro el bloque plugins de Gradle')
-              text = text[:plugin.end()] + '\n\n' + '\n'.join(props) + '\n' + text[plugin.end():]
-          signing = [
-              '    signingConfigs {',
-              '        release {',
-              "            keyAlias keystoreProperties['keyAlias']",
-              "            keyPassword keystoreProperties['keyPassword']",
-              "            storeFile file(keystoreProperties['storeFile'])",
-              "            storePassword keystoreProperties['storePassword']",
-              '        }',
-              '    }',
-          ]
-          if 'signingConfigs {' not in text:
-              android = re.search(r'(?m)^android\s*\{', text)
-              if not android:
-                  raise SystemExit('No se encontro el bloque android de Gradle')
-              text = text[:android.end()] + '\n' + '\n'.join(signing) + '\n' + text[android.end():]
-          build_types = re.search(r'(?m)^\s*buildTypes\s*\{', text)
-          if not build_types:
-              raise SystemExit('No se encontro buildTypes en Gradle')
-          release = re.search(r'(?m)^\s*release\s*\{', text[build_types.end():])
-          if not release:
-              raise SystemExit('No se encontro buildTypes.release en Gradle')
-          start = build_types.end() + release.end()
-          close = text.find('\n        }', start)
-          if close < 0:
-              raise SystemExit('No se encontro el cierre de buildTypes.release')
-          section = text[start:close]
-          section = re.sub(r'(?m)^\s*signingConfig\s+signingConfigs\.(debug|release)\s*$', '', section)
-          section = '\n            signingConfig signingConfigs.release' + section
-          text = text[:start] + section + text[close:]
+
+          def block_bounds(source, pattern, description):
+              match = re.search(pattern, source, re.M)
+              if not match:
+                  raise SystemExit(f'No se encontro el bloque {description}')
+              opening = source.find('{', match.start(), match.end() + 1)
+              if opening < 0:
+                  raise SystemExit(f'No se encontro la llave de apertura de {description}')
+              depth = 0
+              quote = None
+              escaped = False
+              for i in range(opening, len(source)):
+                  ch = source[i]
+                  if quote:
+                      if escaped:
+                          escaped = False
+                      elif ch == '\\':
+                          escaped = True
+                      elif ch == quote:
+                          quote = None
+                      continue
+                  if ch in ("'", '"'):
+                      quote = ch
+                  elif ch == '{':
+                      depth += 1
+                  elif ch == '}':
+                      depth -= 1
+                      if depth == 0:
+                          return match.start(), opening, i + 1
+              raise SystemExit(f'Bloque {description} sin cierre')
+
+          props = """def keystoreProperties = new Properties()
+          def keystorePropertiesFile = rootProject.file('key.properties')
+          if (!keystorePropertiesFile.exists()) {
+              throw new GradleException('No se encontro android/key.properties')
+          }
+          keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          """
+          # Asegurar que las propiedades se carguen una sola vez, antes de android.
+          text = re.sub(
+              r'(?s)def keystoreProperties = new Properties\(\).*?keystoreProperties\.load\(new FileInputStream\(keystorePropertiesFile\)\)\s*',
+              '',
+              text
+          )
+          android_match = re.search(r'(?m)^android\s*\{', text)
+          if not android_match:
+              raise SystemExit('No se encontro el bloque android')
+          text = text[:android_match.start()] + props + '\n' + text[android_match.start():]
+
+          # Reemplazar por completo signingConfigs para evitar que Gradle use debug.
+          try:
+              start, opening, end = block_bounds(text, r'(?m)^\s*signingConfigs\s*\{', 'signingConfigs')
+              signing_block = """signingConfigs {
+                  release {
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                      storeFile file(keystoreProperties['storeFile'])
+                      storePassword keystoreProperties['storePassword']
+                  }
+              }"""
+              text = text[:start] + signing_block + text[end:]
+          except SystemExit as exc:
+              if 'No se encontro el bloque signingConfigs' not in str(exc):
+                  raise
+              _, android_open, _ = block_bounds(text, r'(?m)^android\s*\{', 'android')
+              text = text[:android_open + 1] + """
+              signingConfigs {
+                  release {
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                      storeFile file(keystoreProperties['storeFile'])
+                      storePassword keystoreProperties['storePassword']
+                  }
+              }
+              """ + text[android_open + 1:]
+
+          # Forzar release a usar la firma permanente, sin tocar debug.
+          bt_start, bt_open, bt_end = block_bounds(text, r'(?m)^\s*buildTypes\s*\{', 'buildTypes')
+          bt_text = text[bt_open + 1:bt_end - 1]
+          rel = re.search(r'(?m)^\s*release\s*\{', bt_text)
+          if not rel:
+              raise SystemExit('No se encontro buildTypes.release')
+          rel_open = bt_open + 1 + bt_text.find('{', rel.start(), rel.end() + 1)
+          depth = 0
+          rel_end = None
+          for i in range(rel_open, bt_end):
+              if text[i] == '{':
+                  depth += 1
+              elif text[i] == '}':
+                  depth -= 1
+                  if depth == 0:
+                      rel_end = i + 1
+                      break
+          if rel_end is None:
+              raise SystemExit('El bloque release no tiene cierre')
+          release_body = text[rel_open + 1:rel_end - 1]
+          release_body = re.sub(r'(?m)^\\s*signingConfig\\s+signingConfigs\\.[A-Za-z0-9_]+\\s*;?\\s*$', '', release_body)
+          release_body = '\\n            signingConfig signingConfigs.release\\n' + release_body
+          text = text[:rel_open + 1] + release_body + text[rel_end - 1:]
+
           app.write_text(text)
-          print('Configuracion de firma permanente aplicada.')
+          print('Firma release configurada explicitamente con la llave permanente.')
+          print('Se verificara que el APK use exactamente el mismo certificado.')
           PY
 
       - name: Obtener huella de la llave permanente
@@ -159,18 +219,16 @@ jobs:
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$APKSIGNER" || { echo 'No se encontro apksigner'; exit 1; }
           "$APKSIGNER" verify --print-certs "$APK" > /tmp/nexora-apk-cert.txt
-          # Extraer los 40 caracteres hexadecimales sin depender del formato
-          # exacto del texto que imprime apksigner.
           HUELLA_APK="$(grep -i 'SHA-1' /tmp/nexora-apk-cert.txt | grep -oE '[0-9A-Fa-f]{40}' | head -n 1 | tr '[:lower:]' '[:upper:]')"
           if [ -z "$HUELLA_APK" ]; then
             echo 'No se pudo extraer la huella SHA-1 del certificado de la APK.'
-            echo 'Salida de apksigner:'
             cat /tmp/nexora-apk-cert.txt
             exit 1
           fi
           echo "Huella SHA-1 de la APK: $HUELLA_APK"
-          if [ -z "$HUELLA_APK" ] || [ "$HUELLA_APK" != "$HUELLA_LLAVE" ]; then
-            echo 'ERROR: Gradle no firmo la APK con la llave permanente configurada.'
+          echo "Huella SHA-1 esperada: $HUELLA_LLAVE"
+          if [ "$HUELLA_APK" != "$HUELLA_LLAVE" ]; then
+            echo 'ERROR: La APK no esta firmada con la llave permanente configurada.'
             exit 1
           fi
           echo 'Correcto: la APK esta firmada con la llave permanente configurada.'
