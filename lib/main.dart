@@ -1949,7 +1949,7 @@ class HomePage extends StatelessWidget {
 }
 
 
-// ANIME NEXORA - catálogo de consulta mediante Jikan API (MyAnimeList).
+// ANIME NEXORA - catálogo mediante Kitsu API.
 class AnimeData {
   final int id;
   final String title;
@@ -1960,34 +1960,55 @@ class AnimeData {
   final String year;
   final List<String> genres;
   const AnimeData({required this.id, required this.title, required this.synopsis, required this.image, required this.score, required this.episodes, required this.year, required this.genres});
-  factory AnimeData.fromJson(Map<String, dynamic> j) {
-    final images = j['images'] is Map ? j['images'] as Map : {};
-    final jpg = images['jpg'] is Map ? images['jpg'] as Map : {};
-    final aired = j['aired'] is Map ? j['aired'] as Map : {};
-    final genres = j['genres'] is List ? (j['genres'] as List).whereType<Map>().map((g) => (g['name'] ?? '').toString()).toList() : <String>[];
+
+  factory AnimeData.fromKitsu(Map<String, dynamic> item, Map<String, String> categoryNames) {
+    final a = item['attributes'] is Map ? Map<String, dynamic>.from(item['attributes']) : <String, dynamic>{};
+    final poster = a['posterImage'] is Map ? Map<String, dynamic>.from(a['posterImage']) : <String, dynamic>{};
+    final rating = double.tryParse((a['averageRating'] ?? '').toString());
+    final date = (a['startDate'] ?? '').toString();
+    final rel = item['relationships'] is Map ? Map<String, dynamic>.from(item['relationships']) : <String, dynamic>{};
+    final catRel = rel['categories'] is Map ? Map<String, dynamic>.from(rel['categories']) : <String, dynamic>{};
+    final catData = catRel['data'] is List ? catRel['data'] as List : <dynamic>[];
+    final names = catData.whereType<Map>().map((x) => categoryNames[x['id']?.toString() ?? '']).where((x) => x.isNotEmpty).toList();
+    const genreMap = {'Action':'Acción','Adventure':'Aventura','Comedy':'Comedia','Drama':'Drama','Fantasy':'Fantasía','Romance':'Romance','Science Fiction':'Ciencia ficción','Horror':'Terror','Thriller':'Suspenso'};
     return AnimeData(
-      id: (j['mal_id'] as num?)?.toInt() ?? 0,
-      title: (j['title'] ?? 'Anime sin título').toString(),
-      synopsis: (j['synopsis'] ?? 'Sin sinopsis disponible.').toString(),
-      image: (jpg['large_image_url'] ?? jpg['image_url'] ?? '').toString(),
-      score: j['score']?.toString() ?? 'N/D',
-      episodes: j['episodes']?.toString() ?? 'N/D',
-      year: (aired['from'] ?? '').toString().length >= 4 ? (aired['from'] as String).substring(0, 4) : 'Año N/D',
-      genres: genres,
+      id: int.tryParse(item['id']?.toString() ?? '') ?? 0,
+      title: (a['canonicalTitle'] ?? a['titles']?['en'] ?? a['titles']?['en_jp'] ?? 'Anime sin título').toString(),
+      synopsis: (a['synopsis'] ?? 'Sin sinopsis disponible.').toString(),
+      image: (poster['large'] ?? poster['original'] ?? poster['medium'] ?? '').toString(),
+      score: rating == null ? 'N/D' : (rating / 10).toStringAsFixed(1),
+      episodes: (a['episodeCount'] ?? 'N/D').toString(),
+      year: date.length >= 4 ? date.substring(0, 4) : 'Año N/D',
+      genres: names.map((g) => genreMap[g] ?? g).toList(),
     );
   }
 }
 
 Future<List<AnimeData>> fetchNexoraAnime({String query = ''}) async {
-  final uri = Uri.https('api.jikan.moe', '/v4/anime', {
-    if (query.trim().isNotEmpty) 'q': query.trim(),
-    'limit': '24', 'order_by': 'score', 'sort': 'desc'
+  final uri = Uri.https('kitsu.io', '/api/edge/anime', {
+    if (query.trim().isNotEmpty) 'filter[text]': query.trim(),
+    'page[limit]': '20',
+    'sort': '-averageRating',
+    'include': 'categories',
   });
-  final response = await http.get(uri, headers: {'Accept': 'application/json'}).timeout(const Duration(seconds: 20));
-  if (response.statusCode != 200) throw Exception('No se pudo cargar el catálogo (${response.statusCode}).');
+  final response = await http.get(uri, headers: {
+    'Accept': 'application/vnd.api+json',
+    'Content-Type': 'application/vnd.api+json',
+  }).timeout(const Duration(seconds: 25));
+  if (response.statusCode != 200) {
+    throw Exception('Kitsu respondió ${response.statusCode}.');
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-  final data = decoded['data'] as List? ?? [];
-  return data.whereType<Map>().map((e) => AnimeData.fromJson(Map<String, dynamic>.from(e))).toList();
+  final included = decoded['included'] is List ? decoded['included'] as List : <dynamic>[];
+  final categoryNames = <String, String>{};
+  for (final entry in included.whereType<Map>()) {
+    if (entry['type'] == 'categories') {
+      final attrs = entry['attributes'] is Map ? entry['attributes'] as Map : {};
+      categoryNames[entry['id']?.toString() ?? ''] = (attrs['title'] ?? '').toString();
+    }
+  }
+  final data = decoded['data'] is List ? decoded['data'] as List : <dynamic>[];
+  return data.whereType<Map>().map((e) => AnimeData.fromKitsu(Map<String, dynamic>.from(e), categoryNames)).toList();
 }
 
 class AnimePage extends StatefulWidget {
@@ -2174,7 +2195,7 @@ class _AnimePageState extends State<AnimePage> {
           const Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text(
-              'Datos: Jikan API · MyAnimeList',
+              'Datos: Kitsu API',
               style: TextStyle(color: Colors.white30, fontSize: 9),
             ),
           ),
