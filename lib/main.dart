@@ -2156,6 +2156,8 @@ class HomePage extends StatelessWidget {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AnimePage()));
                   } else if (item.name == 'TV en vivo') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveTvPage()));
+                  } else if (item.name == 'Deportes') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SportsPage()));
                   } else {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryPage(title: item.name)));
                   }
