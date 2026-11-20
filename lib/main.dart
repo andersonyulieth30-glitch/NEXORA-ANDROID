@@ -3612,7 +3612,7 @@ class _SportsPageState extends State<SportsPage> {
             final title = tag('title');
             var link = tag('link');
             if (link.isEmpty) {
-              final linkMatch = RegExp(r'<link[^>]+href=["\']([^"\']+)', caseSensitive: false).firstMatch(body);
+              final linkMatch = RegExp(r'<link[^>]+href=["\x27]([^"\x27]+)', caseSensitive: false).firstMatch(body);
               link = linkMatch?.group(1) ?? '';
             }
             final source = tag('source');
