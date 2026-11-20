@@ -3586,7 +3586,19 @@ class _SportsPageState extends State<SportsPage> {
           'source': 'Noticias deportivas',
         },
         {
-          'url': 'https://feeds.bbci.co.uk/sport/rss.xml',
+          'url': 'https://www.eltiempo.com/rss/deportes.xml',
+          'source': 'El Tiempo',
+        },
+        {
+          'url': 'https://www.lafm.com.co/rss/deportes.xml',
+          'source': 'La FM',
+        },
+        {
+          'url': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/deportes/portada',
+          'source': 'EL PAÍS',
+        },
+        {
+          'url': 'https://feeds.bbci.co.uk/sport/rss.xml?edition=us',
           'source': 'BBC Sport',
         },
       ];
@@ -3611,6 +3623,7 @@ class _SportsPageState extends State<SportsPage> {
             }
             final title = tag('title');
             var link = tag('link');
+            if (link.isEmpty) link = tag('guid');
             if (link.isEmpty) {
               final linkMatch = RegExp(r'<link[^>]+href=["\x27]([^"\x27]+)', caseSensitive: false).firstMatch(body);
               link = linkMatch?.group(1) ?? '';
