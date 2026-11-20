@@ -1476,6 +1476,10 @@ class SeriesData {
   final String year;
   final String image;
   final String status;
+  final double rating;
+  final String language;
+  final String type;
+  final String runtime;
 
   const SeriesData({
     required this.id,
@@ -1485,6 +1489,10 @@ class SeriesData {
     required this.year,
     required this.image,
     required this.status,
+    required this.rating,
+    required this.language,
+    required this.type,
+    required this.runtime,
   });
 
   factory SeriesData.fromJson(Map<String, dynamic> json) {
@@ -1511,6 +1519,10 @@ class SeriesData {
       year: premiered.length >= 4 ? premiered.substring(0, 4) : 'Año no disponible',
       image: (imageData?['original'] ?? imageData?['medium'] ?? '').toString(),
       status: (json['status'] ?? 'Información no disponible').toString(),
+      rating: ((json['rating'] is Map ? (json['rating'] as Map)['average'] : null) as num?)?.toDouble() ?? 0,
+      language: (json['language'] ?? 'No especificado').toString(),
+      type: (json['type'] ?? 'Serie').toString(),
+      runtime: json['runtime'] == null ? 'No disponible' : '${json['runtime']} min',
     );
   }
 }
@@ -1583,20 +1595,27 @@ Future<List<SeriesData>> searchTvMazeShows(String query) async {
 Future<List<SeriesData>> loadTvMazeCatalog() async {
   final client = HttpClient();
   try {
-    final uri = Uri.https('api.tvmaze.com', '/shows', {'page': '0'});
-    final request = await client.getUrl(uri).timeout(const Duration(seconds: 20));
-    request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
-    final response = await request.close().timeout(const Duration(seconds: 20));
-    if (response.statusCode != 200) {
-      throw Exception('No fue posible cargar el catálogo de series.');
+    final collected = <SeriesData>[];
+    // Tres páginas amplían el catálogo sin depender de una única página.
+    for (var page = 0; page < 3; page++) {
+      final uri = Uri.https('api.tvmaze.com', '/shows', {'page': '$page'});
+      final request = await client.getUrl(uri).timeout(const Duration(seconds: 20));
+      request.headers.set(HttpHeaders.userAgentHeader, 'NEXORA-Android/1.0');
+      final response = await request.close().timeout(const Duration(seconds: 20));
+      if (response.statusCode == 404) break;
+      if (response.statusCode != 200) {
+        if (collected.isEmpty) throw Exception('No fue posible cargar el catálogo de series.');
+        break;
+      }
+      final decoded = jsonDecode(await response.transform(utf8.decoder).join());
+      if (decoded is! List || decoded.isEmpty) break;
+      collected.addAll(decoded.whereType<Map>()
+          .map((item) => SeriesData.fromJson(Map<String, dynamic>.from(item)))
+          .where((show) => show.id > 0));
     }
-    final decoded = jsonDecode(await response.transform(utf8.decoder).join());
-    if (decoded is! List) return [];
-    return decoded
-        .whereType<Map>()
-        .map((item) => SeriesData.fromJson(Map<String, dynamic>.from(item)))
-        .where((show) => show.id > 0)
-        .toList();
+    final unique = <int, SeriesData>{};
+    for (final show in collected) { unique[show.id] = show; }
+    return unique.values.toList();
   } finally {
     client.close(force: true);
   }
@@ -1634,6 +1653,7 @@ class _SeriesPageState extends State<SeriesPage> {
   List<SeriesData> allSeries = [];
   bool loading = true;
   String? errorMessage;
+  String selectedFilter = 'Todo';
 
   @override
   void initState() {
@@ -1657,11 +1677,23 @@ class _SeriesPageState extends State<SeriesPage> {
       if (allSeries.isEmpty) {
         allSeries = await loadTvMazeCatalog();
       }
-      final found = term.isEmpty
-          ? allSeries
+      var found = term.isEmpty
+          ? List<SeriesData>.from(allSeries)
           : allSeries.where((show) =>
               show.title.toLowerCase().contains(term.toLowerCase()) ||
               show.genre.toLowerCase().contains(term.toLowerCase())).toList();
+      if (selectedFilter == 'Populares') {
+        found = found.where((show) => show.rating >= 7).toList()
+          ..sort((a, b) => b.rating.compareTo(a.rating));
+      } else if (selectedFilter == 'En emisión') {
+        found = found.where((show) => show.status.toLowerCase() == 'running').toList();
+      } else if (selectedFilter == 'Finalizadas') {
+        found = found.where((show) => show.status.toLowerCase() == 'ended').toList();
+      } else if (selectedFilter == 'Estrenos') {
+        final currentYear = DateTime.now().year;
+        found = found.where((show) => int.tryParse(show.year) != null && int.parse(show.year) >= currentYear - 1).toList()
+          ..sort((a, b) => b.year.compareTo(a.year));
+      }
       if (!mounted) return;
       setState(() {
         results = found;
@@ -1706,6 +1738,8 @@ class _SeriesPageState extends State<SeriesPage> {
                 Text(series.title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
                 Text('${series.genre}  ·  ${series.year}  ·  ${series.status}', style: const TextStyle(color: azul, fontSize: 11, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 7),
+                Text('Idioma: ${series.language}  ·  Formato: ${series.type}  ·  Duración: ${series.runtime}  ·  Calificación: ${series.rating > 0 ? series.rating.toStringAsFixed(1) : 'Sin dato'}', style: const TextStyle(color: Colors.white54, fontSize: 10, height: 1.4)),
                 const SizedBox(height: 12),
                 FutureBuilder<String>(
                   future: translateNexoraText(series.synopsis),
@@ -1847,8 +1881,24 @@ class _SeriesPageState extends State<SeriesPage> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text('Catálogo de series: TVmaze · tvmaze.com', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                const SizedBox(height: 10),
+                SizedBox(height: 36, child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: ['Todo', 'Populares', 'Estrenos', 'En emisión', 'Finalizadas'].map((filter) => Padding(
+                    padding: const EdgeInsets.only(right: 7),
+                    child: ChoiceChip(
+                      label: Text(filter, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                      selected: selectedFilter == filter,
+                      selectedColor: azul.withOpacity(0.22),
+                      backgroundColor: panel,
+                      labelStyle: TextStyle(color: selectedFilter == filter ? azul : Colors.white70),
+                      side: BorderSide(color: selectedFilter == filter ? azul : Colors.white12),
+                      onSelected: (_) { setState(() => selectedFilter = filter); _search(searchController.text); },
+                    ),
+                  )).toList(),
+                )),
+                const SizedBox(height: 7),
+                Text('Catálogo ampliado · TVmaze · ${allSeries.length} series', style: const TextStyle(color: Colors.white38, fontSize: 10)),
               ]),
             ),
             Expanded(
@@ -1883,6 +1933,7 @@ class _SeriesPageState extends State<SeriesPage> {
                                 Text(series.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                                 const SizedBox(height: 3),
                                 Text('${series.genre} · ${series.year}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 9)),
+                                if (series.rating > 0) Row(children: [const Icon(Icons.star_rounded, color: Color(0xFFFFC857), size: 12), const SizedBox(width: 3), Text(series.rating.toStringAsFixed(1), style: const TextStyle(color: Color(0xFFFFC857), fontSize: 9, fontWeight: FontWeight.w800))]),
                                 Text(series.status, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: morado, fontSize: 9, fontWeight: FontWeight.w700)),
                               ]),
                             );
