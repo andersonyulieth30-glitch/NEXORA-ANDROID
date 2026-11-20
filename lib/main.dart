@@ -2248,9 +2248,9 @@ class AnimeData {
     final rating = double.tryParse((a['averageRating'] ?? '').toString());
     final date = (a['startDate'] ?? '').toString();
     final rel = item['relationships'] is Map ? Map<String, dynamic>.from(item['relationships']) : <String, dynamic>{};
-    final catRel = rel['categories'] is Map ? Map<String, dynamic>.from(rel['categories']) : <String, dynamic>{};
-    final catData = catRel['data'] is List ? catRel['data'] as List : <dynamic>[];
-    final names = catData.whereType<Map>().map((x) => categoryNames[x['id']?.toString() ?? ''] ?? '').where((x) => x.isNotEmpty).toList();
+    final genreRel = rel['genres'] is Map ? Map<String, dynamic>.from(rel['genres']) : <String, dynamic>{};
+    final genreData = genreRel['data'] is List ? genreRel['data'] as List : <dynamic>[];
+    final names = genreData.whereType<Map>().map((x) => categoryNames[x['id']?.toString() ?? ''] ?? '').where((x) => x.isNotEmpty).toList();
     const genreMap = {'Action':'Acción','Adventure':'Aventura','Comedy':'Comedia','Drama':'Drama','Fantasy':'Fantasía','Romance':'Romance','Science Fiction':'Ciencia ficción','Horror':'Terror','Thriller':'Suspenso'};
     return AnimeData(
       id: int.tryParse(item['id']?.toString() ?? '') ?? 0,
@@ -2271,13 +2271,13 @@ Future<List<AnimeData>> fetchNexoraAnime({String query = '', String catalog = 'P
     if (query.trim().isNotEmpty) 'filter[text]': query.trim(),
     'page[limit]': '40',
     'sort': sort,
-    'include': 'categories',
+    'include': 'genres',
   };
   if (catalog == 'Próximos') params['filter[status]'] = 'upcoming';
   final uri = Uri.https('kitsu.io', '/api/edge/anime', params);
   final response = await http.get(uri, headers: {
     'Accept': 'application/vnd.api+json',
-    'Content-Type': 'application/vnd.api+json',
+    'User-Agent': 'NEXORA-Android/1.0 (Flutter)',
   }).timeout(const Duration(seconds: 25));
   if (response.statusCode != 200) {
     throw Exception('Kitsu respondió ${response.statusCode}.');
@@ -2286,7 +2286,7 @@ Future<List<AnimeData>> fetchNexoraAnime({String query = '', String catalog = 'P
   final included = decoded['included'] is List ? decoded['included'] as List : <dynamic>[];
   final categoryNames = <String, String>{};
   for (final entry in included.whereType<Map>()) {
-    if (entry['type'] == 'categories') {
+    if (entry['type'] == 'genres' || entry['type'] == 'categories') {
       final attrs = entry['attributes'] is Map ? entry['attributes'] as Map : {};
       categoryNames[entry['id']?.toString() ?? ''] = (attrs['title'] ?? '').toString();
     }
@@ -2323,7 +2323,7 @@ class _AnimePageState extends State<AnimePage> {
       setState(() { _items = found; _loading = false; });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = 'No pudimos cargar el anime. Intenta de nuevo.'; _loading = false; });
+      setState(() { _error = 'No pudimos conectar con el catálogo de anime. Revisa tu conexión e intenta de nuevo. (${e.toString().replaceAll('Exception: ', '')})'; _loading = false; });
     }
   }
 
