@@ -5584,32 +5584,48 @@ class StarPainter extends CustomPainter {
 }
 
 
-class Zona18Page extends StatelessWidget {
+class Zona18Page extends StatefulWidget {
   const Zona18Page({super.key});
+  @override
+  State<Zona18Page> createState() => _Zona18PageState();
+}
 
+class _Zona18PageState extends State<Zona18Page> {
+  final TextEditingController _search = TextEditingController();
+  String _filter = 'Todos';
+  final List<Map<String, String>> _items = [
+    {'title':'El menú','category':'Suspenso','year':'2022','genre':'Suspenso · Humor negro','overview':'Una pareja viaja a una isla para disfrutar una cena exclusiva. La experiencia toma un rumbo inesperado.','image':'/v31MsWhF9WFh7Qooq6xSBbmJpG.jpg'},
+    {'title':'Joker','category':'Drama','year':'2019','genre':'Drama · Crimen','overview':'Un hombre marginado lucha por encontrar su lugar en una ciudad indiferente.','image':'/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg'},
+    {'title':'La ballena','category':'Drama','year':'2022','genre':'Drama','overview':'Un profesor intenta reconstruir la relación con su hija mientras enfrenta decisiones de su pasado.','image':'/jQ0gylJMxWSLld6Q9uAAnx2gZ9g.jpg'},
+    {'title':'Fragmentado','category':'Suspenso','year':'2016','genre':'Suspenso · Terror psicológico','overview':'Tres jóvenes son secuestradas por un hombre cuya conducta cambia de forma inquietante.','image':'/4G6FNNLSIVnus4m6g5mmX1p3aZ.jpg'},
+    {'title':'John Wick','category':'Acción','year':'2014','genre':'Acción · Crimen','overview':'Un antiguo asesino a sueldo regresa al mundo criminal y desata una persecución implacable.','image':'/fZPSd91yGE9fCcCe6OoGRgW8pbc.jpg'},
+    {'title':'El faro','category':'Suspenso','year':'2019','genre':'Drama · Terror psicológico','overview':'Dos trabajadores quedan aislados en un faro y comienzan a perder la noción de la realidad.','image':'/3nk9UoepYmv1G9oP18q6JJ.jpg'},
+  ];
+  @override
+  void dispose() { _search.dispose(); super.dispose(); }
+  void _details(Map<String,String> item) {
+    showModalBottomSheet<void>(context: context, backgroundColor: panel, isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Padding(padding: const EdgeInsets.fromLTRB(22,24,22,32), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [Icon(Icons.eighteen_up_rating_rounded,color:azul),SizedBox(width:8),Text('CONTENIDO PARA ADULTOS',style:TextStyle(color:azul,fontWeight:FontWeight.w900))]),
+        const SizedBox(height:16), Text(item['title']!,style:const TextStyle(fontSize:24,fontWeight:FontWeight.w900)),
+        const SizedBox(height:6), Text('${item['year']} · ${item['genre']}',style:const TextStyle(color:Colors.white60)),
+        const SizedBox(height:14), Text(item['overview']!,style:const TextStyle(color:Colors.white70,height:1.5)),
+        const SizedBox(height:18), Container(width:double.infinity,padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:Colors.white.withOpacity(.06),borderRadius:BorderRadius.circular(12)),child:const Text('La reproducción se habilitará al conectar una fuente oficial o autorizada.',style:TextStyle(color:Colors.white60,fontSize:12))),
+      ])));
+  }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('ZONA +18')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.verified_user_rounded, color: azul, size: 58),
-              const SizedBox(height: 18),
-              const Text('ACCESO VERIFICADO', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 10),
-              const Text(
-                'Tu identidad fue confirmada con la contraseña de tu cuenta NEXORA. Esta sección se habilitará con contenido legal y apropiado para adultos, sujeto a las normas de la plataforma.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60, height: 1.5),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    const categories = ['Todos','Acción','Drama','Suspenso'];
+    final q = _search.text.trim().toLowerCase();
+    final shown = _items.where((e) => (_filter=='Todos'||e['category']==_filter) && (q.isEmpty||e['title']!.toLowerCase().contains(q)||e['genre']!.toLowerCase().contains(q))).toList();
+    return Scaffold(appBar:AppBar(title:const Text('ZONA +18'),actions:[const Padding(padding:EdgeInsets.only(right:16),child:Icon(Icons.verified_user_rounded,color:azul))]),
+      body:CustomScrollView(slivers:[
+        SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(18,12,18,8),child:Container(padding:const EdgeInsets.all(18),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xFF172A4B),Color(0xFF291B48)]),border:Border.all(color:azul.withOpacity(.3))),child:const Row(children:[Icon(Icons.lock_open_rounded,color:azul,size:34),SizedBox(width:13),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('TU ESPACIO PARA ADULTOS',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:.7)),SizedBox(height:5),Text('Catálogo +18 · Acceso verificado',style:TextStyle(color:Colors.white70,fontSize:12))]))])))),
+        SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(18,10,18,12),child:TextField(controller:_search,onChanged:(_)=>setState((){}),decoration:InputDecoration(hintText:'Buscar películas o géneros',prefixIcon:const Icon(Icons.search_rounded,color:azul),filled:true,fillColor:panel,border:OutlineInputBorder(borderRadius:BorderRadius.circular(15),borderSide:BorderSide.none))))),
+        SliverToBoxAdapter(child:SizedBox(height:46,child:ListView.separated(padding:const EdgeInsets.symmetric(horizontal:18),scrollDirection:Axis.horizontal,itemCount:categories.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(context,i){final c=categories[i];final active=c==_filter;return ChoiceChip(label:Text(c),selected:active,onSelected:(_)=>setState(()=>_filter=c),selectedColor:azul.withOpacity(.22),backgroundColor:panel,labelStyle:TextStyle(color:active?azul:Colors.white70,fontWeight:FontWeight.bold),side:BorderSide(color:active?azul:Colors.white12));}))),
+        SliverPadding(padding:const EdgeInsets.fromLTRB(18,18,18,30),sliver:shown.isEmpty?const SliverToBoxAdapter(child:Center(child:Padding(padding:EdgeInsets.all(30),child:Text('No encontramos títulos con esa búsqueda.',style:TextStyle(color:Colors.white60))))):SliverGrid(delegate:SliverChildBuilderDelegate((context,i){final item=shown[i];return InkWell(onTap:()=>_details(item),borderRadius:BorderRadius.circular(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Expanded(child:Stack(fit:StackFit.expand,children:[ClipRRect(borderRadius:BorderRadius.circular(14),child:CachedNetworkImage(imageUrl:'https://image.tmdb.org/t/p/w500${item['image']}',fit:BoxFit.cover,placeholder:(_,__)=>Container(color:panel,child:const Center(child:CircularProgressIndicator(color:azul,strokeWidth:2))),errorWidget:(_,__,___)=>Container(color:panel,child:const Icon(Icons.movie_rounded,color:azul,size:42)))),Positioned(left:8,top:8,child:Container(padding:const EdgeInsets.symmetric(horizontal:7,vertical:4),decoration:BoxDecoration(color:Colors.black.withOpacity(.8),borderRadius:BorderRadius.circular(7)),child:const Text('+18',style:TextStyle(color:azul,fontWeight:FontWeight.w900,fontSize:10))))])),const SizedBox(height:8),Text(item['title']!,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:3),Text('${item['year']} · ${item['category']}',style:const TextStyle(color:Colors.white54,fontSize:11))]));},childCount:shown.length),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:14,mainAxisSpacing:18,childAspectRatio:.62))))
+      ]));
   }
 }
+
