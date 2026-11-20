@@ -2452,15 +2452,16 @@ class _AnimePageState extends State<AnimePage> {
 // Client ID público de la aplicación NEXORA (autenticación PKCE; no hay Client Secret).
 const String traktClientId = 'ZADeKGYMPI9YP1IKaFnN1cJB236p3r6ESLOBD4YNvuc';
 
-Future<List<MovieData>> loadTraktMovies({String query = ''}) async {
+Future<List<MovieData>> loadTraktMovies({String query = '', String catalog = 'trending'}) async {
   final headers = {
     'Content-Type': 'application/json',
     'trakt-api-version': '2',
     'trakt-api-key': traktClientId,
   };
+  final safeCatalog = const {'trending', 'popular', 'anticipated', 'boxoffice'}.contains(catalog) ? catalog : 'trending';
   final endpoint = query.trim().isEmpty
-      ? Uri.https('api.trakt.tv', '/movies/trending', {'page': '1', 'limit': '24', 'extended': 'full'})
-      : Uri.https('api.trakt.tv', '/search/movie', {'query': query.trim(), 'page': '1', 'limit': '24', 'extended': 'full'});
+      ? Uri.https('api.trakt.tv', '/movies/$safeCatalog', {'page': '1', 'limit': '40', 'extended': 'full'})
+      : Uri.https('api.trakt.tv', '/search/movie', {'query': query.trim(), 'page': '1', 'limit': '40', 'extended': 'full'});
   final response = await http.get(endpoint, headers: headers).timeout(const Duration(seconds: 25));
   if (response.statusCode != 200) {
     throw Exception('Trakt respondió ${response.statusCode}.');
@@ -2539,6 +2540,7 @@ class _MoviesPageState extends State<MoviesPage> {
   List<MovieData> archiveMovies = [];
   bool loading = true;
   String selectedGenre = 'Todas';
+  String selectedCatalog = 'trending';
   String? loadError;
 
   @override
@@ -2555,7 +2557,7 @@ class _MoviesPageState extends State<MoviesPage> {
       });
     }
     try {
-      final found = await loadTraktMovies(query: query);
+      final found = await loadTraktMovies(query: query, catalog: selectedCatalog);
       if (!mounted) return;
       setState(() {
         archiveMovies = found;
@@ -2627,6 +2629,34 @@ class _MoviesPageState extends State<MoviesPage> {
             ),
           ),
           const SizedBox(height: 12),
+          const Text('EXPLORAR CATÁLOGO', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                ('trending', 'Tendencias', Icons.local_fire_department_rounded),
+                ('popular', 'Populares', Icons.star_rounded),
+                ('anticipated', 'Próximos estrenos', Icons.upcoming_rounded),
+                ('boxoffice', 'Taquilla', Icons.theater_comedy_rounded),
+              ].map((item) {
+                final selected = selectedCatalog == item.$1;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    avatar: Icon(item.$3, size: 15, color: selected ? fondo : azul),
+                    label: Text(item.$2), selected: selected,
+                    onSelected: (_) { setState(() { selectedCatalog = item.$1; selectedGenre = 'Todas'; }); loadMovies(); },
+                    selectedColor: azul, backgroundColor: panel,
+                    labelStyle: TextStyle(color: selected ? fondo : Colors.white70, fontSize: 10, fontWeight: FontWeight.w800),
+                    side: BorderSide(color: selected ? azul : Colors.white12),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
           SizedBox(
             height: 38,
             child: ListView.separated(
@@ -2654,13 +2684,13 @@ class _MoviesPageState extends State<MoviesPage> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('CATÁLOGO: TRAKT · SINOPSIS EN ESPAÑOL',
+          const Text('CATÁLOGO ACTUALIZADO · SINOPSIS EN ESPAÑOL',
             style: TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: .5)),
           const SizedBox(height: 15),
           if (loading)
             const Padding(padding: EdgeInsets.symmetric(vertical: 65), child: Center(
               child: Column(children: [CircularProgressIndicator(color: azul), SizedBox(height: 14),
-                Text('Cargando películas de Trakt...', style: TextStyle(color: Colors.white70))]))),
+                Text('Cargando catálogo de películas...', style: TextStyle(color: Colors.white70))]))),
           if (!loading && loadError != null)
             Padding(padding: const EdgeInsets.symmetric(vertical: 35), child: Column(children: [
               const Icon(Icons.cloud_off_rounded, color: azul, size: 48),
