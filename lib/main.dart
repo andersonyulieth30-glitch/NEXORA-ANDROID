@@ -2230,7 +2230,7 @@ class HomePage extends StatelessWidget {
 }
 
 
-// ANIME NEXORA - catálogo ampliado Kitsu: populares, tendencias, valorados y próximos.
+// ANIME NEXORA - catálogo público AniList.
 class AnimeData {
   final int id;
   final String title;
@@ -2242,69 +2242,62 @@ class AnimeData {
   final List<String> genres;
   const AnimeData({required this.id, required this.title, required this.synopsis, required this.image, required this.score, required this.episodes, required this.year, required this.genres});
 
-  factory AnimeData.fromKitsu(Map<String, dynamic> item, Map<String, String> categoryNames) {
-    final a = item['attributes'] is Map ? Map<String, dynamic>.from(item['attributes']) : <String, dynamic>{};
-    final poster = a['posterImage'] is Map ? Map<String, dynamic>.from(a['posterImage']) : <String, dynamic>{};
-    final rating = double.tryParse((a['averageRating'] ?? '').toString());
-    final date = (a['startDate'] ?? '').toString();
-    final rel = item['relationships'] is Map ? Map<String, dynamic>.from(item['relationships']) : <String, dynamic>{};
-    final genreRel = rel['genres'] is Map ? Map<String, dynamic>.from(rel['genres']) : <String, dynamic>{};
-    final genreData = genreRel['data'] is List ? genreRel['data'] as List : <dynamic>[];
-    final names = genreData.whereType<Map>().map((x) => categoryNames[x['id']?.toString() ?? ''] ?? '').where((x) => x.isNotEmpty).toList();
-    const genreMap = {'Action':'Acción','Adventure':'Aventura','Comedy':'Comedia','Drama':'Drama','Fantasy':'Fantasía','Romance':'Romance','Science Fiction':'Ciencia ficción','Horror':'Terror','Thriller':'Suspenso'};
+  factory AnimeData.fromAniList(Map<String, dynamic> item) {
+    final titles = item['title'] is Map ? Map<String, dynamic>.from(item['title']) : <String, dynamic>{};
+    final cover = item['coverImage'] is Map ? Map<String, dynamic>.from(item['coverImage']) : <String, dynamic>{};
+    const genreMap = {'Action':'Acción','Adventure':'Aventura','Comedy':'Comedia','Drama':'Drama','Fantasy':'Fantasía','Romance':'Romance','Sci-Fi':'Ciencia ficción','Horror':'Terror','Thriller':'Suspenso','Slice of Life':'Vida cotidiana','Mystery':'Misterio','Sports':'Deportes','Supernatural':'Sobrenatural','Mecha':'Mecha','Psychological':'Psicológico'};
+    final rawGenres = item['genres'] is List ? item['genres'] as List : <dynamic>[];
+    final scoreValue = item['averageScore'];
+    final yearValue = item['startDate'] is Map ? (item['startDate'] as Map)['year'] : null;
+    final rawDescription = (item['description'] ?? 'Sin sinopsis disponible.').toString();
     return AnimeData(
       id: int.tryParse(item['id']?.toString() ?? '') ?? 0,
-      title: (a['canonicalTitle'] ?? a['titles']?['en'] ?? a['titles']?['en_jp'] ?? 'Anime sin título').toString(),
-      synopsis: (a['synopsis'] ?? 'Sin sinopsis disponible.').toString(),
-      image: (poster['large'] ?? poster['original'] ?? poster['medium'] ?? '').toString(),
-      score: rating == null ? 'N/D' : (rating / 10).toStringAsFixed(1),
-      episodes: (a['episodeCount'] ?? 'N/D').toString(),
-      year: date.length >= 4 ? date.substring(0, 4) : 'Año N/D',
-      genres: names.map((g) => genreMap[g] ?? g).toList(),
+      title: (titles['english'] ?? titles['romaji'] ?? titles['native'] ?? 'Anime sin título').toString(),
+      synopsis: rawDescription.replaceAll(RegExp(r'<[^>]*>'), '').replaceAll('&amp;', '&').replaceAll('&quot;', '"').replaceAll('&#039;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>'),
+      image: (cover['extraLarge'] ?? cover['large'] ?? '').toString(),
+      score: scoreValue == null ? 'N/D' : (scoreValue / 10).toStringAsFixed(1),
+      episodes: (item['episodes'] ?? 'N/D').toString(),
+      year: yearValue?.toString() ?? 'Año N/D',
+      genres: rawGenres.map((g) => genreMap[g.toString()] ?? g.toString()).toList(),
     );
   }
 }
 
 Future<List<AnimeData>> fetchNexoraAnime({String query = '', String catalog = 'Populares'}) async {
-  final sort = catalog == 'Tendencias' || catalog == 'Próximos' ? '-startDate' : catalog == 'Mejor valorados' ? '-averageRating' : '-userCount';
-  final params = <String, String>{
-    if (query.trim().isNotEmpty) 'filter[text]': query.trim(),
-    'page[limit]': '40',
-    'sort': sort,
-    'include': 'genres',
+  final sort = catalog == 'Tendencias' ? 'TRENDING_DESC' : catalog == 'Mejor valorados' ? 'SCORE_DESC' : catalog == 'Próximos' ? 'POPULARITY_DESC' : 'POPULARITY_DESC';
+  final variables = <String, dynamic>{
+    'page': 1,
+    'perPage': 40,
+    'search': query.trim().isEmpty ? null : query.trim(),
+    'sort': [sort],
+    'status': catalog == 'Próximos' ? 'NOT_YET_RELEASED' : null,
+    'type': 'ANIME',
   };
-  if (catalog == 'Próximos') params['filter[status]'] = 'upcoming';
-  final uri = Uri.https('kitsu.io', '/api/edge/anime', params);
-  final headers = {
-    'Accept': 'application/vnd.api+json',
-    'User-Agent': 'NEXORA-Android/1.0 (Flutter)',
-  };
-  var response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 25));
-  // Respaldo: algunas respuestas de Kitsu fallan al solicitar relaciones incluidas.
+  const graphQL = r'''query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $status: MediaStatus, $type: MediaType) {
+    Page(page: $page, perPage: $perPage) {
+      media(search: $search, sort: $sort, status: $status, type: $type, isAdult: false) {
+        id title { romaji english native } description(asHtml: false)
+        coverImage { extraLarge large } averageScore episodes
+        startDate { year } genres
+      }
+    }
+  }''';
+  final response = await http.post(
+    Uri.https('graphql.anilist.co', '/'),
+    headers: const {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    body: jsonEncode({'query': graphQL, 'variables': variables}),
+  ).timeout(const Duration(seconds: 25));
   if (response.statusCode != 200) {
-    final fallbackParams = <String, String>{
-      if (query.trim().isNotEmpty) 'filter[text]': query.trim(),
-      'page[limit]': '40',
-      'sort': sort,
-    };
-    if (catalog == 'Próximos') fallbackParams['filter[status]'] = 'upcoming';
-    final fallbackUri = Uri.https('kitsu.io', '/api/edge/anime', fallbackParams);
-    response = await http.get(fallbackUri, headers: headers).timeout(const Duration(seconds: 25));
-  }
-  if (response.statusCode != 200) {
-    throw Exception('Kitsu respondió ${response.statusCode}. Intenta de nuevo más tarde.');
+    throw Exception('AniList respondió ${response.statusCode}.');
   }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-  final included = decoded['included'] is List ? decoded['included'] as List : <dynamic>[];
-  final categoryNames = <String, String>{};
-  for (final entry in included.whereType<Map>()) {
-    if (entry['type'] == 'genres' || entry['type'] == 'categories') {
-      final attrs = entry['attributes'] is Map ? entry['attributes'] as Map : {};
-      categoryNames[entry['id']?.toString() ?? ''] = (attrs['title'] ?? '').toString();
-    }
+  if (decoded['errors'] is List && (decoded['errors'] as List).isNotEmpty) {
+    throw Exception('El catálogo de AniList no pudo completar la consulta.');
   }
-  final data = decoded['data'] is List ? decoded['data'] as List : <dynamic>[];
-  return data.whereType<Map>().map((e) => AnimeData.fromKitsu(Map<String, dynamic>.from(e), categoryNames)).toList();
+  final data = decoded['data'] is Map ? Map<String, dynamic>.from(decoded['data']) : <String, dynamic>{};
+  final page = data['Page'] is Map ? Map<String, dynamic>.from(data['Page']) : <String, dynamic>{};
+  final media = page['media'] is List ? page['media'] as List : <dynamic>[];
+  return media.whereType<Map>().map((e) => AnimeData.fromAniList(Map<String, dynamic>.from(e))).toList();
 }
 
 class AnimePage extends StatefulWidget {
@@ -2520,7 +2513,7 @@ class _AnimePageState extends State<AnimePage> {
           const Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text(
-              'CATÁLOGO ANIME · KITSU',
+              'CATÁLOGO ANIME · ANILIST',
               style: TextStyle(color: Colors.white30, fontSize: 9),
             ),
           ),
