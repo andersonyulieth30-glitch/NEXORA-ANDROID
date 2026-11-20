@@ -3552,6 +3552,9 @@ class _SportsPageState extends State<SportsPage> {
   bool loadingNews = true;
   String? newsError;
   List<Map<String, String>> news = [];
+  bool loadingScores = true;
+  String? scoresError;
+  List<Map<String, String>> footballScores = [];
 
   static const List<Map<String, dynamic>> sports = [
     {'name': 'Fútbol', 'icon': Icons.sports_soccer_rounded, 'color': Color(0xFF43D9A3), 'desc': 'El deporte rey'},
@@ -3566,6 +3569,58 @@ class _SportsPageState extends State<SportsPage> {
   void initState() {
     super.initState();
     _loadSportsNews();
+    _loadFootballScores();
+  }
+
+  Future<void> _loadFootballScores() async {
+    if (mounted) setState(() { loadingScores = true; scoresError = null; });
+    const leagues = <String, String>{
+      'Liga colombiana': 'col.1',
+      'Premier League': 'eng.1',
+      'LaLiga': 'esp.1',
+      'Champions League': 'uefa.champions',
+    };
+    final results = <Map<String, String>>[];
+    for (final league in leagues.entries) {
+      try {
+        final uri = Uri.https('site.api.espn.com', '/apis/site/v2/sports/soccer/${league.value}/scoreboard');
+        final response = await http.get(uri, headers: {'Accept': 'application/json'}).timeout(const Duration(seconds: 12));
+        if (response.statusCode != 200) continue;
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data is! Map || data['events'] is! List) continue;
+        for (final event in data['events']) {
+          if (event is! Map) continue;
+          final competitions = event['competitions'];
+          if (competitions is! List || competitions.isEmpty || competitions.first is! Map) continue;
+          final competition = competitions.first as Map;
+          final competitors = competition['competitors'];
+          if (competitors is! List || competitors.length < 2) continue;
+          String team(Map team) => (team['team'] is Map ? (team['team']['displayName'] ?? team['team']['name'] ?? '') : '').toString();
+          final home = competitors.firstWhere((c) => c is Map && c['homeAway'] == 'home', orElse: () => competitors[0]);
+          final away = competitors.firstWhere((c) => c is Map && c['homeAway'] == 'away', orElse: () => competitors[1]);
+          final status = event['status'] is Map && event['status']['type'] is Map ? event['status']['type'] as Map : <String, dynamic>{};
+          final state = (status['state'] ?? '').toString();
+          final detail = (status['shortDetail'] ?? status['detail'] ?? 'Programado').toString();
+          results.add({
+            'league': league.key,
+            'home': team(home is Map ? home : <dynamic,dynamic>{}),
+            'away': team(away is Map ? away : <dynamic,dynamic>{}),
+            'homeScore': (home is Map ? home['score'] : '')?.toString() ?? '',
+            'awayScore': (away is Map ? away['score'] : '')?.toString() ?? '',
+            'status': state == 'in' ? 'EN VIVO · $detail' : detail,
+            'live': state == 'in' ? '1' : '0',
+            'date': (event['date'] ?? '').toString(),
+          });
+        }
+      } catch (_) { continue; }
+    }
+    results.sort((a, b) => (a['live'] == '1' ? 0 : 1).compareTo(b['live'] == '1' ? 0 : 1));
+    if (!mounted) return;
+    setState(() {
+      footballScores = results.take(20).toList();
+      loadingScores = false;
+      scoresError = footballScores.isEmpty ? 'No hay marcadores disponibles en este momento.' : null;
+    });
   }
 
   String _cleanXml(String value) => value
@@ -3665,7 +3720,7 @@ class _SportsPageState extends State<SportsPage> {
           SizedBox(width: 9),
           Text('DEPORTES NEXORA', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1)),
         ]),
-        actions: [IconButton(onPressed: _loadSportsNews, icon: const Icon(Icons.refresh_rounded), tooltip: 'Actualizar noticias')],
+        actions: [IconButton(onPressed: () { _loadSportsNews(); _loadFootballScores(); }, icon: const Icon(Icons.refresh_rounded), tooltip: 'Actualizar deportes')],
       ),
       body: SafeArea(
         child: ListView(
@@ -3690,6 +3745,35 @@ class _SportsPageState extends State<SportsPage> {
                 ]),
               ]),
             ),
+            const SizedBox(height: 22),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('MARCADORES DE FÚTBOL', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: .5)),
+              TextButton.icon(onPressed: _loadFootballScores, icon: const Icon(Icons.refresh_rounded, size: 15), label: const Text('Actualizar', style: TextStyle(fontSize: 10))),
+            ]),
+            const SizedBox(height: 8),
+            if (loadingScores)
+              const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator(color: azul)))
+            else if (scoresError != null)
+              Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15)), child: Text(scoresError!, style: const TextStyle(color: Colors.white60, fontSize: 11)))
+            else
+              ...footballScores.map((match) => Container(
+                margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: match['live'] == '1' ? const Color(0xFF43D9A3).withOpacity(.45) : Colors.white10)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text(match['league']!, style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w700)),
+                    Text(match['status']!, style: TextStyle(color: match['live'] == '1' ? const Color(0xFF43D9A3) : Colors.white54, fontSize: 9, fontWeight: FontWeight.w800)),
+                  ]),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(child: Text(match['home']!.isEmpty ? 'Local' : match['home']!, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+                    Text(match['homeScore']!.isEmpty ? '—' : match['homeScore']!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                    const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text(':', style: TextStyle(color: Colors.white38))),
+                    Text(match['awayScore']!.isEmpty ? '—' : match['awayScore']!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                    Expanded(child: Text(match['away']!.isEmpty ? 'Visitante' : match['away']!, textAlign: TextAlign.end, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+                  ]),
+                ]),
+              )),
             const SizedBox(height: 25),
             const Text('EXPLORA POR DISCIPLINA', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
             const SizedBox(height: 5),
