@@ -2230,7 +2230,7 @@ class HomePage extends StatelessWidget {
 }
 
 
-// ANIME NEXORA - catálogo mediante Kitsu API.
+// ANIME NEXORA - catálogo ampliado Kitsu: populares, tendencias, valorados y próximos.
 class AnimeData {
   final int id;
   final String title;
@@ -2265,13 +2265,16 @@ class AnimeData {
   }
 }
 
-Future<List<AnimeData>> fetchNexoraAnime({String query = ''}) async {
-  final uri = Uri.https('kitsu.io', '/api/edge/anime', {
+Future<List<AnimeData>> fetchNexoraAnime({String query = '', String catalog = 'Populares'}) async {
+  final sort = catalog == 'Tendencias' || catalog == 'Próximos' ? '-startDate' : catalog == 'Mejor valorados' ? '-averageRating' : '-userCount';
+  final params = <String, String>{
     if (query.trim().isNotEmpty) 'filter[text]': query.trim(),
-    'page[limit]': '20',
-    'sort': '-averageRating',
+    'page[limit]': '40',
+    'sort': sort,
     'include': 'categories',
-  });
+  };
+  if (catalog == 'Próximos') params['filter[status]'] = 'upcoming';
+  final uri = Uri.https('kitsu.io', '/api/edge/anime', params);
   final response = await http.get(uri, headers: {
     'Accept': 'application/vnd.api+json',
     'Content-Type': 'application/vnd.api+json',
@@ -2304,6 +2307,8 @@ class _AnimePageState extends State<AnimePage> {
   bool _loading = true;
   String? _error;
   String _genre = 'Todos';
+  String _catalog = 'Populares';
+  final List<String> _catalogs = const ['Populares', 'Tendencias', 'Mejor valorados', 'Próximos'];
   final List<String> _genres = const ['Todos', 'Acción', 'Aventura', 'Comedia', 'Drama', 'Fantasía', 'Romance', 'Ciencia ficción', 'Terror'];
 
   @override
@@ -2313,7 +2318,7 @@ class _AnimePageState extends State<AnimePage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final found = await fetchNexoraAnime(query: _search.text);
+      final found = await fetchNexoraAnime(query: _search.text, catalog: _catalog);
       if (!mounted) return;
       setState(() { _items = found; _loading = false; });
     } catch (e) {
@@ -2468,6 +2473,22 @@ class _AnimePageState extends State<AnimePage> {
             ),
           ),
           SizedBox(
+            height: 42,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: _catalogs.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, index) => ChoiceChip(
+                label: Text(_catalogs[index]),
+                selected: _catalog == _catalogs[index],
+                onSelected: (_) { setState(() => _catalog = _catalogs[index]); _load(); },
+                selectedColor: morado.withOpacity(.30),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
             height: 44,
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2487,7 +2508,7 @@ class _AnimePageState extends State<AnimePage> {
           const Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text(
-              'Datos: Kitsu API',
+              'CATÁLOGO ANIME · KITSU',
               style: TextStyle(color: Colors.white30, fontSize: 9),
             ),
           ),
