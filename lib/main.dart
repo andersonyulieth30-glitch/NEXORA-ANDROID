@@ -2230,298 +2230,100 @@ class HomePage extends StatelessWidget {
 }
 
 
-// ANIME NEXORA - catálogo público AniList.
+// ANIME NEXORA - catálogo público AniList (GraphQL).
 class AnimeData {
-  final int id;
-  final String title;
-  final String synopsis;
-  final String image;
-  final String score;
-  final String episodes;
-  final String year;
-  final List<String> genres;
+  final int id; final String title; final String synopsis; final String image; final String score; final String episodes; final String year; final List<String> genres;
   const AnimeData({required this.id, required this.title, required this.synopsis, required this.image, required this.score, required this.episodes, required this.year, required this.genres});
-
   factory AnimeData.fromAniList(Map<String, dynamic> item) {
-    final titles = item['title'] is Map ? Map<String, dynamic>.from(item['title']) : <String, dynamic>{};
+    final titleData = item['title'] is Map ? Map<String, dynamic>.from(item['title']) : <String, dynamic>{};
     final cover = item['coverImage'] is Map ? Map<String, dynamic>.from(item['coverImage']) : <String, dynamic>{};
-    const genreMap = {'Action':'Acción','Adventure':'Aventura','Comedy':'Comedia','Drama':'Drama','Fantasy':'Fantasía','Romance':'Romance','Sci-Fi':'Ciencia ficción','Horror':'Terror','Thriller':'Suspenso','Slice of Life':'Vida cotidiana','Mystery':'Misterio','Sports':'Deportes','Supernatural':'Sobrenatural','Mecha':'Mecha','Psychological':'Psicológico'};
-    final rawGenres = item['genres'] is List ? item['genres'] as List : <dynamic>[];
     final scoreValue = item['averageScore'];
-    final yearValue = item['startDate'] is Map ? (item['startDate'] as Map)['year'] : null;
-    final rawDescription = (item['description'] ?? 'Sin sinopsis disponible.').toString();
+    const genreMap = {'Action':'Acción','Adventure':'Aventura','Comedy':'Comedia','Drama':'Drama','Fantasy':'Fantasía','Romance':'Romance','Sci-Fi':'Ciencia ficción','Horror':'Terror','Thriller':'Suspenso','Mystery':'Misterio','Sports':'Deportes','Supernatural':'Sobrenatural','Slice of Life':'Vida cotidiana'};
+    final rawGenres = item['genres'] is List ? item['genres'] as List : <dynamic>[];
     return AnimeData(
       id: int.tryParse(item['id']?.toString() ?? '') ?? 0,
-      title: (titles['english'] ?? titles['romaji'] ?? titles['native'] ?? 'Anime sin título').toString(),
-      synopsis: rawDescription.replaceAll(RegExp(r'<[^>]*>'), '').replaceAll('&amp;', '&').replaceAll('&quot;', '"').replaceAll('&#039;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>'),
+      title: (titleData['english'] ?? titleData['romaji'] ?? titleData['native'] ?? 'Anime sin título').toString(),
+      synopsis: (item['description'] ?? 'Sin sinopsis disponible.').toString().replaceAll(RegExp(r'<[^>]*>'), '').replaceAll('&quot;', '"').replaceAll('&#039;', "'").replaceAll('&amp;', '&'),
       image: (cover['extraLarge'] ?? cover['large'] ?? '').toString(),
-      score: scoreValue == null ? 'N/D' : (scoreValue / 10).toStringAsFixed(1),
-      episodes: (item['episodes'] ?? 'N/D').toString(),
-      year: yearValue?.toString() ?? 'Año N/D',
+      score: scoreValue == null ? 'N/D' : ((double.tryParse(scoreValue.toString()) ?? 0) / 10).toStringAsFixed(1),
+      episodes: (item['episodes'] ?? 'N/D').toString(), year: (item['seasonYear'] ?? 'Año N/D').toString(),
       genres: rawGenres.map((g) => genreMap[g.toString()] ?? g.toString()).toList(),
     );
   }
 }
 
 Future<List<AnimeData>> fetchNexoraAnime({String query = '', String catalog = 'Populares'}) async {
-  final sort = catalog == 'Tendencias' ? 'TRENDING_DESC' : catalog == 'Mejor valorados' ? 'SCORE_DESC' : catalog == 'Próximos' ? 'POPULARITY_DESC' : 'POPULARITY_DESC';
-  final variables = <String, dynamic>{
-    'page': 1,
-    'perPage': 40,
-    'search': query.trim().isEmpty ? null : query.trim(),
-    'sort': [sort],
-    'status': catalog == 'Próximos' ? 'NOT_YET_RELEASED' : null,
-    'type': 'ANIME',
-  };
-  const graphQL = r'''query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $status: MediaStatus, $type: MediaType) {
-    Page(page: $page, perPage: $perPage) {
-      media(search: $search, sort: $sort, status: $status, type: $type, isAdult: false) {
-        id title { romaji english native } description(asHtml: false)
-        coverImage { extraLarge large } averageScore episodes
-        startDate { year } genres
+  final sort = catalog == 'Tendencias' ? 'TRENDING_DESC' : catalog == 'Mejor valorados' ? 'SCORE_DESC' : catalog == 'Próximos' ? 'START_DATE' : 'POPULARITY_DESC';
+  final variables = <String, dynamic>{'search': query.trim().isEmpty ? null : query.trim(), 'sort': [sort], 'status': catalog == 'Próximos' ? 'NOT_YET_RELEASED' : null};
+  const graphQL = r'''
+    query NexoraAnime($search: String, $sort: [MediaSort], $status: MediaStatus) {
+      Page(page: 1, perPage: 40) {
+        media(type: ANIME, search: $search, sort: $sort, status: $status) {
+          id title { english romaji native } description(asHtml: false)
+          coverImage { extraLarge large } averageScore episodes seasonYear genres
+        }
       }
     }
-  }''';
-  final response = await http.post(
-    Uri.https('graphql.anilist.co', '/'),
-    headers: const {'Content-Type': 'application/json', 'Accept': 'application/json'},
-    body: jsonEncode({'query': graphQL, 'variables': variables}),
-  ).timeout(const Duration(seconds: 25));
-  if (response.statusCode != 200) {
-    throw Exception('AniList respondió ${response.statusCode}.');
-  }
+  ''';
+  final response = await http.post(Uri.https('graphql.anilist.co', '/'), headers: const {'Content-Type': 'application/json', 'Accept': 'application/json'}, body: jsonEncode({'query': graphQL, 'variables': variables})).timeout(const Duration(seconds: 25));
+  if (response.statusCode != 200) throw Exception('AniList respondió ${response.statusCode}. Intenta de nuevo.');
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-  if (decoded['errors'] is List && (decoded['errors'] as List).isNotEmpty) {
-    throw Exception('El catálogo de AniList no pudo completar la consulta.');
-  }
+  if (decoded['errors'] is List && (decoded['errors'] as List).isNotEmpty) throw Exception('AniList no pudo entregar el catálogo. Intenta de nuevo.');
   final data = decoded['data'] is Map ? Map<String, dynamic>.from(decoded['data']) : <String, dynamic>{};
   final page = data['Page'] is Map ? Map<String, dynamic>.from(data['Page']) : <String, dynamic>{};
   final media = page['media'] is List ? page['media'] as List : <dynamic>[];
-  return media.whereType<Map>().map((e) => AnimeData.fromAniList(Map<String, dynamic>.from(e))).toList();
+  return media.whereType<Map>().map((item) => AnimeData.fromAniList(Map<String, dynamic>.from(item))).toList();
 }
 
 class AnimePage extends StatefulWidget {
   const AnimePage({super.key});
-  @override
-  State<AnimePage> createState() => _AnimePageState();
+  @override State<AnimePage> createState() => _AnimePageState();
 }
-
 class _AnimePageState extends State<AnimePage> {
   final TextEditingController _search = TextEditingController();
-  List<AnimeData> _items = [];
-  bool _loading = true;
-  String? _error;
-  String _genre = 'Todos';
-  String _catalog = 'Populares';
+  List<AnimeData> _items = []; bool _loading = true; String? _error; String _genre = 'Todos'; String _catalog = 'Populares';
   final List<String> _catalogs = const ['Populares', 'Tendencias', 'Mejor valorados', 'Próximos'];
   final List<String> _genres = const ['Todos', 'Acción', 'Aventura', 'Comedia', 'Drama', 'Fantasía', 'Romance', 'Ciencia ficción', 'Terror'];
-
-  @override
-  void initState() { super.initState(); _load(); }
-  @override
-  void dispose() { _search.dispose(); super.dispose(); }
+  @override void initState() { super.initState(); _load(); }
+  @override void dispose() { _search.dispose(); super.dispose(); }
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
-    try {
-      final found = await fetchNexoraAnime(query: _search.text, catalog: _catalog);
-      if (!mounted) return;
-      setState(() { _items = found; _loading = false; });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() { _error = 'No pudimos conectar con el catálogo de anime. Revisa tu conexión e intenta de nuevo. (${e.toString().replaceAll('Exception: ', '')})'; _loading = false; });
-    }
+    try { final found = await fetchNexoraAnime(query: _search.text, catalog: _catalog); if (!mounted) return; setState(() { _items = found; _loading = false; }); }
+    catch (e) { if (!mounted) return; setState(() { _error = 'No pudimos cargar el catálogo. Revisa tu conexión. (${e.toString().replaceAll('Exception: ', '')})'; _loading = false; }); }
   }
-
   void _details(AnimeData anime) {
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: panel, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))), builder: (ctx) => SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (anime.image.isNotEmpty) ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.network(anime.image, height: 220, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Icon(Icons.movie, size: 45)))),
       const SizedBox(height: 16), Text(anime.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 7), Text('${anime.year}  ·  ${anime.episodes} episodios  ·  ★ ${anime.score}', style: const TextStyle(color: azul, fontSize: 12)),
+      const SizedBox(height: 7), Text('${anime.year} · ${anime.episodes} episodios · ★ ${anime.score}', style: const TextStyle(color: azul, fontSize: 12)),
       const SizedBox(height: 8), Text(anime.genres.join(' · '), style: const TextStyle(color: Colors.white60, fontSize: 12)),
       const SizedBox(height: 15), const Text('SINOPSIS', style: TextStyle(color: azul, fontWeight: FontWeight.w900, letterSpacing: 1)),
       const SizedBox(height: 7), FutureBuilder<String>(future: translateNexoraText(anime.synopsis), builder: (_, snap) => Text(snap.data ?? 'Preparando sinopsis en español…', style: const TextStyle(height: 1.5, color: Colors.white70))),
-      const SizedBox(height: 14),
-      SizedBox(width: double.infinity, height: 46, child: OutlinedButton.icon(
-        onPressed: () => saveNexoraFavorite(
-          context: ctx, type: 'anime', id: anime.id.toString(),
-          title: anime.title, category: anime.genres.join(' · '), year: anime.year,
-          description: anime.synopsis, image: anime.image,
-        ),
-        icon: const Icon(Icons.bookmark_add_outlined),
-        label: const Text('AGREGAR A MI LISTA'),
-        style: OutlinedButton.styleFrom(foregroundColor: azul, side: const BorderSide(color: azul)),
-      )),
+      const SizedBox(height: 14), SizedBox(width: double.infinity, height: 46, child: OutlinedButton.icon(onPressed: () => saveNexoraFavorite(context: ctx, type: 'anime', id: anime.id.toString(), title: anime.title, category: anime.genres.join(' · '), year: anime.year, description: anime.synopsis, image: anime.image), icon: const Icon(Icons.bookmark_add_outlined), label: const Text('AGREGAR A MI LISTA'), style: OutlinedButton.styleFrom(foregroundColor: azul, side: const BorderSide(color: azul)))),
       const SizedBox(height: 15), const Text('Información y catálogo de anime. La reproducción se habilitará cuando exista una fuente autorizada.', style: TextStyle(color: Colors.white38, fontSize: 11)),
       const SizedBox(height: 12), SizedBox(width: double.infinity, child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('CERRAR'))),
     ]))));
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final visible = _genre == 'Todos'
-        ? _items
-        : _items.where((a) => a.genres.any(
-            (g) => g.toLowerCase().contains(_genre.toLowerCase()),
-          )).toList();
-
+  @override Widget build(BuildContext context) {
+    final visible = _genre == 'Todos' ? _items : _items.where((a) => a.genres.any((g) => g.toLowerCase() == _genre.toLowerCase())).toList();
     Widget content;
-    if (_loading) {
-      content = const Center(child: CircularProgressIndicator(color: azul));
-    } else if (_error != null) {
-      content = Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_error!),
-            const SizedBox(height: 10),
-            ElevatedButton(onPressed: _load, child: const Text('REINTENTAR')),
-          ],
-        ),
-      );
-    } else if (visible.isEmpty) {
-      content = const Center(
-        child: Text('No encontramos anime en esta categoría.'),
-      );
-    } else {
-      content = GridView.builder(
-        padding: const EdgeInsets.all(14),
-        itemCount: visible.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: .60,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 14,
-        ),
-        itemBuilder: (context, index) {
-          final anime = visible[index];
-          return InkWell(
-            onTap: () => _details(anime),
-            borderRadius: BorderRadius.circular(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: anime.image.isEmpty
-                          ? Container(
-                              color: panel,
-                              child: const Icon(Icons.animation, size: 40, color: morado),
-                            )
-                          : Image.network(
-                              anime.image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stack) => Container(
-                                color: panel,
-                                child: const Icon(Icons.animation, size: 40, color: morado),
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  anime.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-                ),
-                Text(
-                  '★ ${anime.score}  ·  ${anime.year}',
-                  style: const TextStyle(color: azul, fontSize: 10),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.animation_rounded, color: azul),
-            SizedBox(width: 9),
-            Text('ANIME NEXORA'),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _search,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _load(),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar anime…',
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: panel,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(onPressed: _load, icon: const Icon(Icons.search)),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 42,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: _catalogs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, index) => ChoiceChip(
-                label: Text(_catalogs[index]),
-                selected: _catalog == _catalogs[index],
-                onSelected: (_) { setState(() => _catalog = _catalogs[index]); _load(); },
-                selectedColor: morado.withOpacity(.30),
-              ),
-            ),
-          ),
-          const SizedBox(height: 5),
-          SizedBox(
-            height: 44,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: _genres.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, index) => ChoiceChip(
-                label: Text(_genres[index]),
-                selected: _genre == _genres[index],
-                onSelected: (_) => setState(() => _genre = _genres[index]),
-                selectedColor: azul.withOpacity(.25),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(child: content),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text(
-              'CATÁLOGO ANIME · ANILIST',
-              style: TextStyle(color: Colors.white30, fontSize: 9),
-            ),
-          ),
-        ],
-      ),
-    );
+    if (_loading) { content = const Center(child: CircularProgressIndicator(color: azul)); }
+    else if (_error != null) { content = Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 10), ElevatedButton(onPressed: _load, child: const Text('REINTENTAR'))]))); }
+    else if (visible.isEmpty) { content = const Center(child: Text('No encontramos anime en esta categoría.')); }
+    else { content = GridView.builder(padding: const EdgeInsets.all(14), itemCount: visible.length, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: .60, crossAxisSpacing: 12, mainAxisSpacing: 14), itemBuilder: (context, index) {
+      final anime = visible[index];
+      return InkWell(onTap: () => _details(anime), borderRadius: BorderRadius.circular(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(14), child: SizedBox(width: double.infinity, child: anime.image.isEmpty ? Container(color: panel, child: const Icon(Icons.animation, size: 40, color: morado)) : Image.network(anime.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: panel, child: const Icon(Icons.animation, size: 40, color: morado))))),
+        const SizedBox(height: 7), Text(anime.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)), Text('★ ${anime.score} · ${anime.year}', style: const TextStyle(color: azul, fontSize: 10)),
+      ]));
+    }); }
+    return Scaffold(appBar: AppBar(title: const Row(children: [Icon(Icons.animation_rounded, color: azul), SizedBox(width: 9), Text('ANIME NEXORA')])), body: Column(children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Row(children: [Expanded(child: TextField(controller: _search, textInputAction: TextInputAction.search, onSubmitted: (_) => _load(), decoration: InputDecoration(hintText: 'Buscar anime…', prefixIcon: const Icon(Icons.search), filled: true, fillColor: panel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none)))), const SizedBox(width: 8), IconButton.filled(onPressed: _load, icon: const Icon(Icons.search))])),
+      SizedBox(height: 42, child: ListView.separated(padding: const EdgeInsets.symmetric(horizontal: 16), scrollDirection: Axis.horizontal, itemCount: _catalogs.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(_catalogs[i]), selected: _catalog == _catalogs[i], onSelected: (_) { setState(() { _catalog = _catalogs[i]; _genre = 'Todos'; }); _load(); }, selectedColor: morado.withOpacity(.30)))),
+      const SizedBox(height: 5), SizedBox(height: 44, child: ListView.separated(padding: const EdgeInsets.symmetric(horizontal: 16), scrollDirection: Axis.horizontal, itemCount: _genres.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(_genres[i]), selected: _genre == _genres[i], onSelected: (_) => setState(() => _genre = _genres[i]), selectedColor: azul.withOpacity(.25)))),
+      const SizedBox(height: 8), Expanded(child: content), const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('CATÁLOGO ANIME · ANILIST', style: TextStyle(color: Colors.white30, fontSize: 9))),
+    ]));
   }
-
 }
 
 
