@@ -3578,32 +3578,58 @@ class _SportsPageState extends State<SportsPage> {
     if (mounted) setState(() { loadingNews = true; newsError = null; });
     try {
       final sportQuery = selectedSport == 'Todos' ? 'deportes Colombia' : '${selectedSport == 'Fórmula 1' ? 'Formula 1' : selectedSport} deporte';
-      final uri = Uri.https('news.google.com', '/rss/search', {
-        'q': '$sportQuery cuando:7d', 'hl': 'es-419', 'gl': 'CO', 'ceid': 'CO:es-419',
-      });
-      final response = await http.get(uri, headers: {'User-Agent': 'NEXORA/1.0'}).timeout(const Duration(seconds: 18));
-      if (response.statusCode != 200) throw Exception('No se pudo consultar las noticias.');
-      final xml = utf8.decode(response.bodyBytes, allowMalformed: true);
-      final items = RegExp(r'<item>(.*?)</item>', dotAll: true).allMatches(xml);
-      final result = <Map<String, String>>[];
-      for (final item in items.take(12)) {
-        final body = item.group(1) ?? '';
-        String tag(String name) {
-          final match = RegExp('<$name[^>]*>(.*?)</$name>', dotAll: true).firstMatch(body);
-          return match == null ? '' : _cleanXml(match.group(1) ?? '');
-        }
-        final title = tag('title');
-        final link = tag('link');
-        final source = tag('source');
-        final date = tag('pubDate');
-        if (title.isNotEmpty && link.startsWith('http')) {
-          result.add({'title': title, 'link': link, 'source': source.isEmpty ? 'Noticias deportivas' : source, 'date': date});
+      final feeds = <Map<String, String>>[
+        {
+          'url': Uri.https('news.google.com', '/rss/search', {
+            'q': '$sportQuery cuando:7d', 'hl': 'es-419', 'gl': 'CO', 'ceid': 'CO:es-419',
+          }).toString(),
+          'source': 'Noticias deportivas',
+        },
+        {
+          'url': 'https://feeds.bbci.co.uk/sport/rss.xml',
+          'source': 'BBC Sport',
+        },
+      ];
+      List<Map<String, String>> result = [];
+      for (final feed in feeds) {
+        try {
+          final response = await http.get(Uri.parse(feed['url']!), headers: {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+          }).timeout(const Duration(seconds: 15));
+          if (response.statusCode != 200) continue;
+          final xml = utf8.decode(response.bodyBytes, allowMalformed: true);
+          final items = <RegExpMatch>[
+            ...RegExp(r'<item\b[^>]*>(.*?)</item>', caseSensitive: false, dotAll: true).allMatches(xml),
+            ...RegExp(r'<entry\b[^>]*>(.*?)</entry>', caseSensitive: false, dotAll: true).allMatches(xml),
+          ];
+          for (final item in items.take(15)) {
+            final body = item.group(1) ?? '';
+            String tag(String name) {
+              final match = RegExp('<(?:[a-zA-Z0-9_]+:)?$name\\b[^>]*>(.*?)</(?:[a-zA-Z0-9_]+:)?$name>', caseSensitive: false, dotAll: true).firstMatch(body);
+              return match == null ? '' : _cleanXml((match.group(1) ?? '').replaceAll(RegExp(r'<[^>]+>'), ''));
+            }
+            final title = tag('title');
+            var link = tag('link');
+            if (link.isEmpty) {
+              final linkMatch = RegExp(r'<link[^>]+href=["\']([^"\']+)', caseSensitive: false).firstMatch(body);
+              link = linkMatch?.group(1) ?? '';
+            }
+            final source = tag('source');
+            final date = tag('pubDate').isNotEmpty ? tag('pubDate') : tag('updated');
+            if (title.isNotEmpty && link.startsWith('http')) {
+              result.add({'title': title, 'link': link, 'source': source.isEmpty ? feed['source']! : source, 'date': date});
+            }
+          }
+          if (result.isNotEmpty) break;
+        } catch (_) {
+          continue;
         }
       }
-      if (result.isEmpty) throw Exception('No hay noticias disponibles en este momento.');
-      if (mounted) setState(() { news = result; loadingNews = false; });
+      if (result.isEmpty) throw Exception('No hay fuentes disponibles.');
+      if (mounted) setState(() { news = result.take(12).toList(); loadingNews = false; newsError = null; });
     } catch (_) {
-      if (mounted) setState(() { loadingNews = false; newsError = 'No pudimos cargar las noticias. Comprueba tu conexión e inténtalo de nuevo.'; });
+      if (mounted) setState(() { loadingNews = false; newsError = 'Las fuentes deportivas no están disponibles ahora. Intenta actualizar más tarde.'; });
     }
   }
 
